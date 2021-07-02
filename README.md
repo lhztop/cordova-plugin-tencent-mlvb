@@ -87,7 +87,7 @@ TencentMLVB.stopPush();
 #### 开始观看
 
 ```
-TencentMLVB.startPush(url, playUrlType, successCallback, errorCallback);
+TencentMLVB.startPlay(url, playUrlType, successCallback, errorCallback);
 ```
 
 需要手动指定拉流的类型，`TencentMLVB.PLAY_URL_TYPE` 列举了相关的枚举值：
