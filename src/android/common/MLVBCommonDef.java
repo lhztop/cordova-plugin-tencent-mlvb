@@ -14,96 +14,128 @@ import java.util.List;
 import java.util.Map;
 
 public class MLVBCommonDef {
-    public enum CustomFieldOp{
-        SET/*设置*/, INC/*加计数*/, DEC/*减计数*/
-    }
+  public enum CustomFieldOp {
+    SET/*设置*/, INC/*加计数*/, DEC/*减计数*/
+  }
 
-    public interface LiveRoomErrorCode {
-        //推流和拉流错误码，请查看 TXLiteAVCode.h
-        //IM 错误码，请查看 https://cloud.tencent.com/document/product/269/1671
+  public static class Constants {
 
-        /******************************************
-         *
-         * LiveRoom错误码
-         *
-         *****************************************/
-        int OK = 0;
-// { 后台错误码
-        /*msg处理错误*/
-        int ERROR_CODE_INVALID_MSG = 200100;
-        int ERROR_CODE_INVALID_JSON = 200101;
-        /*参数校验错误*/
-        int ERROR_CODE_INCOMPLETE_PARAM = 201000;
-        int ERROR_CODE_INCOMPLETE_LOGIN_PARAM = 201001;
-        int ERROR_CODE_NO_USERID = 201002;
-        int ERROR_CODE_USERID_NOT_EQUAL = 201003;
-        int ERROR_CODE_NO_ROOMID = 201004;
-        int ERROR_CODE_NO_COUNT = 201005;
-        int ERROR_CODE_NO_MERGE_STREAM_PARAM = 201006;
-        int ERROR_CODE_OPERATION_EMPTY = 201007;
-        int ERROR_CODE_UNSUPPORT_OPERATION = 201008;
-        int ERROR_CODE_SET_FIELD_VALUE_EMPTY = 201009;
-        /*鉴权错误*/
-        int ERROR_CODE_VERIFY = 202000;
-        int ERROR_CODE_VERIFY_FAILED = 202001;
-        int ERROR_CODE_CONNECTED_TO_IM_SERVER = 202002;
-        int ERROR_CODE_INVALID_RSP = 202003;
-        int ERROR_CODE_LOGOUT = 202004;
-        int ERROR_CODE_APPID_RELATION = 202005;
-        /*房间操作错误*/
-        int ERROR_CODE_ROOM_MGR = 203000;
-        int ERROR_CODE_GET_ROOM_ID = 203001;
-        int ERROR_CODE_CREATE_ROOM = 203002;
-        int ERROR_CODE_DESTROY_ROOM = 203003;
-        int ERROR_CODE_GET_ROOM_LIST = 203004;
-        int ERROR_CODE_UPDATE_ROOM_MEMBER = 203005;
-        int ERROR_CODE_ENTER_ROOM = 203006;
-        int ERROR_CODE_ROOM_PUSHER_TOO_MUCH = 203007;
-        int ERROR_CODE_INVALID_PUSH_URL = 203008;
-        int ERROR_CODE_ROOM_NAME_TOO_LONG = 203009;
-        int ERROR_CODE_USER_NOT_IN_ROOM = 203010;
+    public static final String URL_PRODUCT_DOCUMENT = "https://cloud.tencent.com/document/product/454/7885";   // 产品介绍链接
+    public static final String URL_FETCH_PUSH_URL = "https://lvb.qcloud.com/weapp/utils/get_test_pushurl";
 
-        /*pusher操作错误*/
-        int ERROR_CODE_PUSHER_MGR = 204000;
-        int ERROR_CODE_GET_PUSH_URL = 204001;
-        int ERROR_CODE_GET_PUSHERS = 204002;
-        int ERROR_CODE_LEAVE_ROOM = 204003;
-        int ERROR_CODE_GET_PUSH_AND_ACC_URL = 204004;
+    /**
+     * QRCodeScanActivity完成扫描后，传递过来的结果的KEY
+     */
+    public static final String INTENT_SCAN_RESULT = "SCAN_RESULT";
 
-        /*观众操作错误*/
-        int ERROR_CODE_AUDIENCE_MGR = 205000;
-        int ERROR_CODE_AUDIENCE_NUM_FULL = 205001;
-        int ERROR_CODE_ADD_AUDIENCE = 205002;
-        int ERROR_CODE_DEL_AUDIENCE = 205003;
-        int ERROR_CODE_GET_AUDIENCES = 205004;
+    /**
+     * LivePlayerURLActivity设置页面传递给LivePlayerActivity的直播地址
+     */
+    public static final String INTENT_URL_PUSH = "intent_url_push";
+    public static final String INTENT_URL_PLAY_RTMP = "intent_url_play_rtmp";
+    public static final String INTENT_URL_PLAY_FLV = "intent_url_play_flv";
+    public static final String INTENT_URL_PLAY_HLS = "intent_url_play_hls";
+    public static final String INTENT_URL_PLAY_ACC = "intent_url_play_acc";
 
-        /*心跳处理错误*/
-        int ERROR_CODE_HEARTBEAT = 206000;
-        int ERROR_CODE_SET_HEARTBEAT = 206001;
-        int ERROR_CODE_DEL_HEARTBEAT = 206002;
-        /*其他错误*/
-        int ERROR_CODE_OTHER = 207000;
-        int ERROR_CODE_DB_FAILED = 207001;
-        int ERROR_CODE_MIX_FAILED = 207002;
-        int ERROR_CODE_SET_CUSTOM_FIELD = 207003;
-        int ERROR_CODE_GET_CUSTOM_FIELD = 207004;
-        int ERROR_CODE_UNSUPPORT_ACTION = 207005;
-        int ERROR_CODE_UNSUPPORT_ROOM_TYPE = 207006;
+    public static final String URL_PUSH = "url_push";       // RTMP 推流地址
+    public static final String URL_PLAY_RTMP = "url_play_rtmp";  // RTMP 播放地址
+    public static final String URL_PLAY_FLV = "url_play_flv";   // FLA  播放地址
+    public static final String URL_PLAY_HLS = "url_play_hls";   // HLS  播放地址
+    public static final String URL_PLAY_ACC = "url_play_acc";   // RTMP 加速流地址
+
+    public static final int PLAY_STATUS_SUCCESS = 0;
+    public static final int PLAY_STATUS_INVALID_URL = -1;
+    public static final int PLAY_STATUS_INVALID_PLAY_TYPE = -3;
+    public static final int PLAY_STATUS_INVALID_RTMP_URL = -4;
+    public static final int PLAY_STATUS_LICENSE_ERROR = -5;
+  }
+
+  public interface LiveRoomErrorCode {
+    //推流和拉流错误码，请查看 TXLiteAVCode.h
+    //IM 错误码，请查看 https://cloud.tencent.com/document/product/269/1671
+
+    /******************************************
+     *
+     * LiveRoom错误码
+     *
+     *****************************************/
+    int OK = 0;
+    // { 后台错误码
+    /*msg处理错误*/
+    int ERROR_CODE_INVALID_MSG = 200100;
+    int ERROR_CODE_INVALID_JSON = 200101;
+    /*参数校验错误*/
+    int ERROR_CODE_INCOMPLETE_PARAM = 201000;
+    int ERROR_CODE_INCOMPLETE_LOGIN_PARAM = 201001;
+    int ERROR_CODE_NO_USERID = 201002;
+    int ERROR_CODE_USERID_NOT_EQUAL = 201003;
+    int ERROR_CODE_NO_ROOMID = 201004;
+    int ERROR_CODE_NO_COUNT = 201005;
+    int ERROR_CODE_NO_MERGE_STREAM_PARAM = 201006;
+    int ERROR_CODE_OPERATION_EMPTY = 201007;
+    int ERROR_CODE_UNSUPPORT_OPERATION = 201008;
+    int ERROR_CODE_SET_FIELD_VALUE_EMPTY = 201009;
+    /*鉴权错误*/
+    int ERROR_CODE_VERIFY = 202000;
+    int ERROR_CODE_VERIFY_FAILED = 202001;
+    int ERROR_CODE_CONNECTED_TO_IM_SERVER = 202002;
+    int ERROR_CODE_INVALID_RSP = 202003;
+    int ERROR_CODE_LOGOUT = 202004;
+    int ERROR_CODE_APPID_RELATION = 202005;
+    /*房间操作错误*/
+    int ERROR_CODE_ROOM_MGR = 203000;
+    int ERROR_CODE_GET_ROOM_ID = 203001;
+    int ERROR_CODE_CREATE_ROOM = 203002;
+    int ERROR_CODE_DESTROY_ROOM = 203003;
+    int ERROR_CODE_GET_ROOM_LIST = 203004;
+    int ERROR_CODE_UPDATE_ROOM_MEMBER = 203005;
+    int ERROR_CODE_ENTER_ROOM = 203006;
+    int ERROR_CODE_ROOM_PUSHER_TOO_MUCH = 203007;
+    int ERROR_CODE_INVALID_PUSH_URL = 203008;
+    int ERROR_CODE_ROOM_NAME_TOO_LONG = 203009;
+    int ERROR_CODE_USER_NOT_IN_ROOM = 203010;
+
+    /*pusher操作错误*/
+    int ERROR_CODE_PUSHER_MGR = 204000;
+    int ERROR_CODE_GET_PUSH_URL = 204001;
+    int ERROR_CODE_GET_PUSHERS = 204002;
+    int ERROR_CODE_LEAVE_ROOM = 204003;
+    int ERROR_CODE_GET_PUSH_AND_ACC_URL = 204004;
+
+    /*观众操作错误*/
+    int ERROR_CODE_AUDIENCE_MGR = 205000;
+    int ERROR_CODE_AUDIENCE_NUM_FULL = 205001;
+    int ERROR_CODE_ADD_AUDIENCE = 205002;
+    int ERROR_CODE_DEL_AUDIENCE = 205003;
+    int ERROR_CODE_GET_AUDIENCES = 205004;
+
+    /*心跳处理错误*/
+    int ERROR_CODE_HEARTBEAT = 206000;
+    int ERROR_CODE_SET_HEARTBEAT = 206001;
+    int ERROR_CODE_DEL_HEARTBEAT = 206002;
+    /*其他错误*/
+    int ERROR_CODE_OTHER = 207000;
+    int ERROR_CODE_DB_FAILED = 207001;
+    int ERROR_CODE_MIX_FAILED = 207002;
+    int ERROR_CODE_SET_CUSTOM_FIELD = 207003;
+    int ERROR_CODE_GET_CUSTOM_FIELD = 207004;
+    int ERROR_CODE_UNSUPPORT_ACTION = 207005;
+    int ERROR_CODE_UNSUPPORT_ROOM_TYPE = 207006;
 
 // } 后台错误码
 
-// { 客户端错误码
-        int ERROR_NOT_LOGIN = -1; //未登录
-        int ERROR_NOT_IN_ROOM = -2; //未进直播房间
-        int ERROR_PUSH = -3; //推流错误
-        int ERROR_PARAMETERS_INVALID = -4; //参数错误
-        int ERROR_LICENSE_INVALID = -5; //license 校验失败
-        int ERROR_PLAY = -6; //播放错误
-        int ERROR_IM_FORCE_OFFLINE = -7; // IM 被强制下线（例如：多端登录）
+    // { 客户端错误码
+    int ERROR_NOT_LOGIN = -1; //未登录
+    int ERROR_NOT_IN_ROOM = -2; //未进直播房间
+    int ERROR_PUSH = -3; //推流错误
+    int ERROR_PARAMETERS_INVALID = -4; //参数错误
+    int ERROR_LICENSE_INVALID = -5; //license 校验失败
+    int ERROR_PLAY = -6; //播放错误
+    int ERROR_IM_FORCE_OFFLINE = -7; // IM 被强制下线（例如：多端登录）
 // } 客户端错误码
 
-        // @}
-    }
+    // @}
+  }
 
   /**
    * Module:   TCGlobalConfig
@@ -124,8 +156,8 @@ public class MLVBCommonDef {
      * <p>
      * 获取License，请参考官网指引 https://cloud.tencent.com/document/product/454/34750
      */
-    public static final String LICENCE_URL = "http://license.vod2.myqcloud.com/license/v1/3c6dec57c3d8540904f8bfebc39452bd/TXLiveSDK.licence";
-    public static final String LICENCE_KEY = "728a4aaa1ac2ca1a3aad75a0a220ec60";
+    public static final String LICENCE_URL = "https://license.vod2.myqcloud.com/license/v1/8612e157f4dc57d7255dd8623c865e0d/TXLiveSDK.licence";
+    public static final String LICENCE_KEY = "5b80e37e9404b5225e2c05bfa4b68f69";
 
 
     /**
@@ -134,7 +166,7 @@ public class MLVBCommonDef {
      * 进入腾讯云直播[控制台-直播SDK-应用管理](https://console.cloud.tencent.com/live/license/appmanage) 创建应用，即可看到 SDKAppId，
      * 它是腾讯云用于区分客户的唯一标识。
      */
-    public static final int SDKAPPID = 1400540398;
+    public static final int SDKAPPID = 1400541023;
 
     /**
      * 2.2 计算签名用的加密密钥，获取步骤如下：
@@ -147,7 +179,7 @@ public class MLVBCommonDef {
      * 注意：该方案仅适用于调试Demo，正式上线前请将 UserSig 计算代码和密钥迁移到您的后台服务器上，以避免加密密钥泄露导致的流量盗用。
      * 文档：https://cloud.tencent.com/document/product/647/17275#Server
      */
-    public static final String SECRETKEY = "5a7c5c81896fd2071b1c4d0747c83040915a0613a8fedf74d29a37ad79a94929";
+    public static final String SECRETKEY = "a40f8698448fb731998072f6c63558f8b0a3db72f1031a0a0e2cc9d59df70735";
 
     /**
      * 2.3 签名过期时间，建议不要设置的过短
@@ -196,14 +228,24 @@ public class MLVBCommonDef {
 
 
     /**
-     * 6. 直播的域名，用于push pull 流,直接用腾讯云直播地址
+     * 6. 直播推流域名，用于push流,直接用腾讯云直播地址
      */
-    public static final String DOMAIN_URL = "https://144660.livepush.myqcloud.com";
+    public static final String PUSH_DOMAIN_URL = "144681.livepush.myqcloud.com";
 
     /**
-     * 7. 直播的域名鉴权key，用于push pull 流,直接用腾讯云直播地址
+     * 7. 直播推流域名鉴权key，用于push pull 流,直接用腾讯云直播地址
      */
-    public static final String DOMAIN_KEY = "c874b6166f43c9b53b57c5ffa64797e8";
+    public static final String PUSH_DOMAIN_KEY = "ba8023817835f7103443642a051c11be";
+
+    /**
+     * 8. 直播播流的域名，用于pull 流,直接用腾讯云直播地址
+     */
+    public static final String PULL_DOMAIN_URL = "livetest2.homei-life.com";
+
+    /**
+     * 7. 直播播流域名鉴权key，用于pull 流, 一般不建议打开
+     */
+    public static final String PULL_DOMAIN_KEY = "ba8023817835f7103443642a051c11be";
 
 
     /**
@@ -219,118 +261,118 @@ public class MLVBCommonDef {
 
   public static class RoomInfo implements Parcelable {
 
-      /**
-       * 房间ID
-       */
-      public String   roomID;
+    /**
+     * 房间ID
+     */
+    public String roomID;
 
-      /**
-       * 房间信息（创建房间时传入）
-       */
-      public String   roomInfo;
+    /**
+     * 房间信息（创建房间时传入）
+     */
+    public String roomInfo;
 
-      /**
-       * 房间名称
-       */
-      public String   roomName;
+    /**
+     * 房间名称
+     */
+    public String roomName;
 
-      /**
-       * 房间创建者ID
-       */
-      public String   roomCreator;
+    /**
+     * 房间创建者ID
+     */
+    public String roomCreator;
 
-      /**
-       * 房间创建者的拉流地址（实时模式下不使用该字段；直播模式下就是主播的拉流地址；连麦模式下就是混流地址）
-       */
-      public String   mixedPlayURL;
+    /**
+     * 房间创建者的拉流地址（实时模式下不使用该字段；直播模式下就是主播的拉流地址；连麦模式下就是混流地址）
+     */
+    public String mixedPlayURL;
 
-      /**
-       * 房间成员列表
-       */
-      public List<AnchorInfo> pushers;
+    /**
+     * 房间成员列表
+     */
+    public List<AnchorInfo> pushers;
 
-      /**
-       * 房间观众数
-       */
-      public int audienceCount;
+    /**
+     * 房间观众数
+     */
+    public int audienceCount;
 
-      /**
-       * 房间观众列表
-       */
-      public List<Audience> audiences;
+    /**
+     * 房间观众列表
+     */
+    public List<Audience> audiences;
 
-      /**
-       * 房间自定义数据
-       */
-      public String custom;
+    /**
+     * 房间自定义数据
+     */
+    public String custom;
 
-      public static class Audience {
-          public String userID;     //观众ID
-          public String userInfo;   //观众信息
-          public String userName;
-          public String userAvatar;
+    public static class Audience {
+      public String userID;     //观众ID
+      public String userInfo;   //观众信息
+      public String userName;
+      public String userAvatar;
 
-          public void transferUserInfo() {
-              JSONObject jsonRoomInfo = null;
-              try {
-                  jsonRoomInfo = new JSONObject(userInfo);
-                  userName    = jsonRoomInfo.optString("userName");
-                  userAvatar  = jsonRoomInfo.optString("userAvatar");
-              } catch (JSONException e) {
-                  e.printStackTrace();
-              }
-          }
+      public void transferUserInfo() {
+        JSONObject jsonRoomInfo = null;
+        try {
+          jsonRoomInfo = new JSONObject(userInfo);
+          userName = jsonRoomInfo.optString("userName");
+          userAvatar = jsonRoomInfo.optString("userAvatar");
+        } catch (JSONException e) {
+          e.printStackTrace();
+        }
       }
+    }
 
-      public RoomInfo() {
+    public RoomInfo() {
 
-      }
+    }
 
-      public RoomInfo(String roomID, String roomInfo, String roomName, String roomCreator, String mixedPlayURL, List<AnchorInfo> anchors) {
-          this.roomID = roomID;
-          this.roomInfo = roomInfo;
-          this.roomName = roomName;
-          this.roomCreator = roomCreator;
-          this.mixedPlayURL = mixedPlayURL;
-          this.pushers = anchors;
-      }
+    public RoomInfo(String roomID, String roomInfo, String roomName, String roomCreator, String mixedPlayURL, List<AnchorInfo> anchors) {
+      this.roomID = roomID;
+      this.roomInfo = roomInfo;
+      this.roomName = roomName;
+      this.roomCreator = roomCreator;
+      this.mixedPlayURL = mixedPlayURL;
+      this.pushers = anchors;
+    }
 
-      protected RoomInfo(Parcel in) {
-          this.roomID = in.readString();
-          this.roomInfo = in.readString();
-          this.roomName = in.readString();
-          this.roomCreator = in.readString();
-          this.mixedPlayURL = in.readString();
-          this.pushers = new ArrayList<AnchorInfo>();
-          in.readList(this.pushers, AnchorInfo.class.getClassLoader());
+    protected RoomInfo(Parcel in) {
+      this.roomID = in.readString();
+      this.roomInfo = in.readString();
+      this.roomName = in.readString();
+      this.roomCreator = in.readString();
+      this.mixedPlayURL = in.readString();
+      this.pushers = new ArrayList<AnchorInfo>();
+      in.readList(this.pushers, AnchorInfo.class.getClassLoader());
+    }
+
+    @Override
+    public int describeContents() {
+      return 0;
+    }
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+      dest.writeString(this.roomID);
+      dest.writeString(this.roomInfo);
+      dest.writeString(this.roomName);
+      dest.writeString(this.roomCreator);
+      dest.writeString(this.mixedPlayURL);
+      dest.writeList(this.pushers);
+    }
+
+    public static final Creator<RoomInfo> CREATOR = new Creator<RoomInfo>() {
+      @Override
+      public RoomInfo createFromParcel(Parcel source) {
+        return new RoomInfo(source);
       }
 
       @Override
-      public int describeContents() {
-          return 0;
+      public RoomInfo[] newArray(int size) {
+        return new RoomInfo[size];
       }
-
-      @Override
-      public void writeToParcel(Parcel dest, int flags) {
-          dest.writeString(this.roomID);
-          dest.writeString(this.roomInfo);
-          dest.writeString(this.roomName);
-          dest.writeString(this.roomCreator);
-          dest.writeString(this.mixedPlayURL);
-          dest.writeList(this.pushers);
-      }
-
-      public static final Creator<RoomInfo> CREATOR = new Creator<RoomInfo>() {
-          @Override
-          public RoomInfo createFromParcel(Parcel source) {
-              return new RoomInfo(source);
-          }
-
-          @Override
-          public RoomInfo[] newArray(int size) {
-              return new RoomInfo[size];
-          }
-      };
+    };
   }
 
   /**
@@ -340,72 +382,72 @@ public class MLVBCommonDef {
 
   public static class LoginInfo implements Parcelable {
 
-      /**
-       * 直播的appID
-       */
-      public long   sdkAppID;
+    /**
+     * 直播的appID
+     */
+    public long sdkAppID;
 
-      /**
-       * 自己的用户ID
-       */
-      public String   userID;
+    /**
+     * 自己的用户ID
+     */
+    public String userID;
 
-      public String userSig;
+    public String userSig;
 
-      /**
-       * 自己的用户名称
-       */
-      public String   userName;
+    /**
+     * 自己的用户名称
+     */
+    public String userName;
 
-      /**
-       * 自己的头像地址
-       */
-      public String   userAvatar;
+    /**
+     * 自己的头像地址
+     */
+    public String userAvatar;
 
 
-      public LoginInfo() {
+    public LoginInfo() {
 
-      }
+    }
 
-      public LoginInfo(int sdkAppID, String userID, String userName, String userAvatar, String userSig) {
-          this.sdkAppID = sdkAppID;
-          this.userID = userID;
-          this.userName = userName;
-          this.userAvatar = userAvatar;
-          this.userSig = userSig;
-      }
+    public LoginInfo(int sdkAppID, String userID, String userName, String userAvatar, String userSig) {
+      this.sdkAppID = sdkAppID;
+      this.userID = userID;
+      this.userName = userName;
+      this.userAvatar = userAvatar;
+      this.userSig = userSig;
+    }
 
-      protected LoginInfo(Parcel in) {
-          this.userID = in.readString();
-          this.userName = in.readString();
-          this.userAvatar = in.readString();
-          this.userSig = in.readString();
+    protected LoginInfo(Parcel in) {
+      this.userID = in.readString();
+      this.userName = in.readString();
+      this.userAvatar = in.readString();
+      this.userSig = in.readString();
+    }
+
+    @Override
+    public int describeContents() {
+      return 0;
+    }
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+      dest.writeString(this.userID);
+      dest.writeString(this.userName);
+      dest.writeString(this.userAvatar);
+      dest.writeString(this.userSig);
+    }
+
+    public static final Creator<LoginInfo> CREATOR = new Creator<LoginInfo>() {
+      @Override
+      public LoginInfo createFromParcel(Parcel source) {
+        return new LoginInfo(source);
       }
 
       @Override
-      public int describeContents() {
-          return 0;
+      public LoginInfo[] newArray(int size) {
+        return new LoginInfo[size];
       }
-
-      @Override
-      public void writeToParcel(Parcel dest, int flags) {
-          dest.writeString(this.userID);
-          dest.writeString(this.userName);
-          dest.writeString(this.userAvatar);
-          dest.writeString(this.userSig);
-      }
-
-      public static final Creator<LoginInfo> CREATOR = new Creator<LoginInfo>() {
-          @Override
-          public LoginInfo createFromParcel(Parcel source) {
-              return new LoginInfo(source);
-          }
-
-          @Override
-          public LoginInfo[] newArray(int size) {
-              return new LoginInfo[size];
-          }
-      };
+    };
   }
 
   public static class AnchorInfo implements Parcelable {
@@ -413,22 +455,22 @@ public class MLVBCommonDef {
     /**
      * 用户ID
      */
-    public String   userID;
+    public String userID;
 
     /**
      * 用户昵称
      */
-    public String   userName;
+    public String userName;
 
     /**
      * 用户头像地址
      */
-    public String   userAvatar;
+    public String userAvatar;
 
     /**
      * 低时延拉流地址（带防盗链key）
      */
-    public String   accelerateURL;
+    public String accelerateURL;
 
 
     public AnchorInfo() {
@@ -491,531 +533,534 @@ public class MLVBCommonDef {
   }
 
   public static class AudienceInfo {
-      public String userID;     //观众ID
-      public String userInfo;   //观众信息
-      public String userName;
-      public String userAvatar;
+    public String userID;     //观众ID
+    public String userInfo;   //观众信息
+    public String userName;
+    public String userAvatar;
 
-      public void transferUserInfo() {
-          JSONObject jsonRoomInfo = null;
-          try {
-              jsonRoomInfo = new JSONObject(userInfo);
-              userName    = jsonRoomInfo.optString("userName");
-              userAvatar  = jsonRoomInfo.optString("userAvatar");
-          } catch (JSONException e) {
-              e.printStackTrace();
-          }
+    public void transferUserInfo() {
+      JSONObject jsonRoomInfo = null;
+      try {
+        jsonRoomInfo = new JSONObject(userInfo);
+        userName = jsonRoomInfo.optString("userName");
+        userAvatar = jsonRoomInfo.optString("userAvatar");
+      } catch (JSONException e) {
+        e.printStackTrace();
       }
+    }
   }
 
   /**
    * MLVBLiveRoom 事件回调
-   *
+   * <p>
    * 包括房间关闭、Debug 事件信息、出错说明等。
    */
   public static interface IMLVBLiveRoomListener {
 
-      /////////////////////////////////////////////////////////////////////////////////
-      //
-      //                       错误 & 警告
-      //
-      /////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////
+    //
+    //                       错误 & 警告
+    //
+    /////////////////////////////////////////////////////////////////////////////////
 
-      /// @name 通用事件回调
-      /// @{
+    /// @name 通用事件回调
+    /// @{
+
+    /**
+     * 错误回调
+     * <p>
+     * SDK 不可恢复的错误，一定要监听，并分情况给用户适当的界面提示
+     *
+     * @param errCode   错误码
+     * @param errMsg    错误信息
+     * @param extraInfo 额外信息，如错误发生的用户，一般不需要关注，默认是本地错误
+     */
+    public void onError(int errCode, String errMsg, Bundle extraInfo);
+
+    /**
+     * 警告回调
+     *
+     * @param warningCode 错误码 TRTCWarningCode
+     * @param warningMsg  警告信息
+     * @param extraInfo   额外信息，如警告发生的用户，一般不需要关注，默认是本地错误
+     */
+    public void onWarning(int warningCode, String warningMsg, Bundle extraInfo);
+
+    void onDebugLog(String log);
+
+    /// @}
+
+    /////////////////////////////////////////////////////////////////////////////////
+    //
+    //                      房间事件回调
+    //
+    /////////////////////////////////////////////////////////////////////////////////
+
+    /// @name 房间事件回调
+    /// @{
+
+    /**
+     * 房间被销毁的回调
+     * <p>
+     * 主播退房时，房间内的所有用户都会收到此通知
+     *
+     * @param roomID 房间 ID
+     */
+    public void onRoomDestroy(String roomID);
+
+
+    /////////////////////////////////////////////////////////////////////////////////
+    //
+    //                      主播 & 观众的进出事件回调
+    //
+    /////////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * 收到新主播进房通知
+     * <p>
+     * 房间内的主播（和连麦中的观众）会收到新主播的进房事件，您可以调用 {@link MLVBLiveRoom#startRemoteView(AnchorInfo, TXCloudVideoView, PlayCallback)} 显示该主播的视频画面。
+     *
+     * @param anchorInfo 新进房用户信息
+     * @note 直播间里的普通观众不会收到主播加入和推出的通知。
+     */
+    public void onAnchorEnter(AnchorInfo anchorInfo);
+
+    /**
+     * 收到主播退房通知
+     * <p>
+     * 房间内的主播（和连麦中的观众）会收到新主播的退房事件，您可以调用 {@link MLVBLiveRoom#stopRemoteView(AnchorInfo)} 关闭该主播的视频画面。
+     *
+     * @param anchorInfo 退房用户信息
+     * @note 直播间里的普通观众不会收到主播加入和推出的通知。
+     */
+    public void onAnchorExit(AnchorInfo anchorInfo);
+
+    /**
+     * 收到观众进房通知
+     *
+     * @param audienceInfo 进房观众信息
+     */
+    public void onAudienceEnter(AudienceInfo audienceInfo);
+
+    /**
+     * 收到观众退房通知
+     *
+     * @param audienceInfo 退房观众信息
+     */
+    public void onAudienceExit(AudienceInfo audienceInfo);
+
+
+    /////////////////////////////////////////////////////////////////////////////////
+    //
+    //                      主播和观众连麦事件回调
+    //
+    /////////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * 主播收到观众连麦请求时的回调
+     *
+     * @param anchorInfo 观众信息
+     * @param reason     连麦原因描述
+     */
+    public void onRequestJoinAnchor(AnchorInfo anchorInfo, String reason);
+
+    /**
+     * 连麦观众收到被踢出连麦的通知
+     * <p>
+     * 连麦观众收到被主播踢除连麦的消息，您需要调用 {@link MLVBLiveRoom#kickoutJoinAnchor(String)} 来退出连麦
+     */
+    public void onKickoutJoinAnchor();
+
+
+    /////////////////////////////////////////////////////////////////////////////////
+    //
+    //                      主播 PK 事件回调
+    //
+    /////////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * 收到请求跨房 PK 通知
+     * <p>
+     * 主播收到其他房间主播的 PK 请求
+     * 如果同意 PK ，您需要调用 {@link MLVBLiveRoom#startRemoteView(AnchorInfo, TXCloudVideoView, PlayCallback)}  接口播放邀约主播的流
+     *
+     * @param anchorInfo 发起跨房连麦的主播信息
+     */
+    public void onRequestRoomPK(AnchorInfo anchorInfo);
+
+
+    /**
+     * 收到断开跨房 PK 通知
+     */
+    public void onQuitRoomPK(AnchorInfo anchorInfo);
+
+    /// @}
+
+    /////////////////////////////////////////////////////////////////////////////////
+    //
+    //                      消息事件回调
+    //
+    /////////////////////////////////////////////////////////////////////////////////
+
+    /// @name 消息事件回调
+    /// @{
+
+    /**
+     * 收到文本消息
+     *
+     * @param roomID     房间 ID
+     * @param userID     发送者 ID
+     * @param userName   发送者昵称
+     * @param userAvatar 发送者头像
+     * @param message    文本消息
+     */
+    public void onRecvRoomTextMsg(String roomID, String userID, String userName, String userAvatar, String message);
+
+    /**
+     * 收到自定义消息
+     *
+     * @param roomID     房间 ID
+     * @param userID     发送者 ID
+     * @param userName   发送者昵称
+     * @param userAvatar 发送者头像
+     * @param cmd        自定义 cmd
+     * @param message    自定义消息内容
+     */
+    public void onRecvRoomCustomMsg(String roomID, String userID, String userName, String userAvatar, String cmd, String message);
+
+    /// @}
+
+    /**
+     * 登录结果回调接口
+     */
+    public interface LoginCallback {
+      /**
+       * 错误回调
+       *
+       * @param errCode 错误码
+       * @param errInfo 错误信息
+       */
+      void onError(int errCode, String errInfo);
+
+      /**
+       * 成功回调
+       */
+      void onSuccess();
+    }
+
+    /**
+     * 获取房间列表回调接口
+     */
+    public interface GetRoomListCallback {
+      /**
+       * 错误回调
+       *
+       * @param errCode 错误码
+       * @param errInfo 错误信息
+       */
+      void onError(int errCode, String errInfo);
+
+      /**
+       * 成功回调
+       *
+       * @param roomInfoList 房间列表
+       */
+      void onSuccess(ArrayList<RoomInfo> roomInfoList);
+    }
+
+    /**
+     * 获取观众列表回调接口
+     * <p>
+     * 观众进房时，后台会将其信息加入观众列表中，观众列表最大保存30名观众信息。
+     */
+    public interface GetAudienceListCallback {
+      /**
+       * 错误回调
+       *
+       * @param errCode 错误码
+       * @param errInfo 错误信息
+       */
+      void onError(int errCode, String errInfo);
+
+      /**
+       * 成功回调
+       *
+       * @param audienceInfoList 观众列表
+       */
+      void onSuccess(ArrayList<AudienceInfo> audienceInfoList);
+    }
+
+    /**
+     * 创建房间的结果回调接口
+     */
+    public interface CreateRoomCallback {
+      /**
+       * 错误回调
+       *
+       * @param errCode 错误码
+       * @param errInfo 错误信息
+       */
+      void onError(int errCode, String errInfo);
+
+      /**
+       * 成功回调
+       *
+       * @param RoomID 房间号标识
+       */
+      void onSuccess(String RoomID);
+    }
+
+    /**
+     * 进入房间的结果回调接口
+     */
+    public interface EnterRoomCallback {
+      /**
+       * 错误回调
+       *
+       * @param errCode 错误码
+       * @param errInfo 错误信息
+       */
+      void onError(int errCode, String errInfo);
+
+      /**
+       * 成功回调
+       */
+      void onSuccess();
+    }
+
+    /**
+     * 离开房间的结果回调接口
+     */
+    public interface ExitRoomCallback {
+      /**
+       * 错误回调
+       *
+       * @param errCode 错误码
+       * @param errInfo 错误信息
+       */
+      void onError(int errCode, String errInfo);
+
+      /**
+       * 成功回调
+       */
+      void onSuccess();
+    }
+
+    /**
+     * 观众请求连麦的结果回调接口
+     */
+    public interface RequestJoinAnchorCallback {
+      /**
+       * 主播接受连麦
+       */
+      void onAccept();
+
+      /**
+       * 主播拒绝连麦
+       *
+       * @param reason 拒绝原因
+       */
+      void onReject(String reason);
+
+      /**
+       * 请求超时
+       */
+      void onTimeOut();
 
       /**
        * 错误回调
        *
-       * SDK 不可恢复的错误，一定要监听，并分情况给用户适当的界面提示
+       * @param errCode 错误码
+       * @param errInfo 错误信息
+       */
+      void onError(int errCode, String errInfo);
+    }
+
+    /**
+     * 进入连麦的结果回调接口
+     */
+    public interface JoinAnchorCallback {
+      /**
+       * 错误回调
        *
-       * @param errCode 	错误码
-       * @param errMsg 	错误信息
-       * @param extraInfo 额外信息，如错误发生的用户，一般不需要关注，默认是本地错误
+       * @param errCode 错误码 RequestRoomPKCallback
+       * @param errInfo 错误信息
        */
-      public void onError(int errCode, String errMsg, Bundle extraInfo);
+      void onError(int errCode, String errInfo);
 
       /**
-       * 警告回调
+       * 成功回调
+       */
+      void onSuccess();
+    }
+
+    /**
+     * 退出连麦的结果回调接口
+     */
+    public interface QuitAnchorCallback {
+      /**
+       * 错误回调
        *
-       * @param warningCode 	错误码 TRTCWarningCode
-       * @param warningMsg 	警告信息
-       * @param extraInfo 	额外信息，如警告发生的用户，一般不需要关注，默认是本地错误
+       * @param errCode 错误码
+       * @param errInfo 错误信息
        */
-      public void onWarning(int warningCode, String warningMsg, Bundle extraInfo);
-
-      void onDebugLog(String log);
-
-      /// @}
-
-      /////////////////////////////////////////////////////////////////////////////////
-      //
-      //                      房间事件回调
-      //
-      /////////////////////////////////////////////////////////////////////////////////
-
-      /// @name 房间事件回调
-      /// @{
+      void onError(int errCode, String errInfo);
 
       /**
-       * 房间被销毁的回调
+       * 成功回调
+       */
+      void onSuccess();
+    }
+
+    /**
+     * 请求跨房 PK 的结果回调接口
+     */
+    public interface RequestRoomPKCallback {
+      /**
+       * 主播接受连麦
        *
-       * 主播退房时，房间内的所有用户都会收到此通知
+       * @param anchorInfo 被邀请 PK 主播的信息
+       */
+      void onAccept(AnchorInfo anchorInfo);
+
+      /**
+       * 拒绝 PK
        *
-       * @param roomID 房间 ID
+       * @param reason 拒绝原因
        */
-      public void onRoomDestroy(String roomID) ;
-
-
-      /////////////////////////////////////////////////////////////////////////////////
-      //
-      //                      主播 & 观众的进出事件回调
-      //
-      /////////////////////////////////////////////////////////////////////////////////
+      void onReject(String reason);
 
       /**
-       * 收到新主播进房通知
+       * 请求超时
+       */
+      void onTimeOut();
+
+      /**
+       * 错误回调
        *
-       * 房间内的主播（和连麦中的观众）会收到新主播的进房事件，您可以调用 {@link MLVBLiveRoom#startRemoteView(AnchorInfo, TXCloudVideoView, PlayCallback)} 显示该主播的视频画面。
+       * @param errCode 错误码
+       * @param errInfo 错误信息
+       */
+      void onError(int errCode, String errInfo);
+    }
+
+    /**
+     * 退出跨房 PK 的结果回调接口
+     */
+    public interface QuitRoomPKCallback {
+      /**
+       * 错误回调
        *
-       * @param anchorInfo 新进房用户信息
+       * @param errCode 错误码
+       * @param errInfo 错误信息
+       */
+      void onError(int errCode, String errInfo);
+
+      /**
+       * 成功回调
+       */
+      void onSuccess();
+    }
+
+    /**
+     * 播放器回调接口
+     */
+    public interface PlayCallback {
+      /**
+       * 开始回调
+       */
+      void onBegin();
+
+      /**
+       * 错误回调
        *
-       * @note 直播间里的普通观众不会收到主播加入和推出的通知。
+       * @param errCode 错误码
+       * @param errInfo 错误信息
        */
-      public void onAnchorEnter(AnchorInfo anchorInfo) ;
+      void onError(int errCode, String errInfo);
 
       /**
-       * 收到主播退房通知
+       * 其他事件回调
        *
-       * 房间内的主播（和连麦中的观众）会收到新主播的退房事件，您可以调用 {@link MLVBLiveRoom#stopRemoteView(AnchorInfo)} 关闭该主播的视频画面。
+       * @param event 事件 ID
+       * @param param 事件附加信息
+       */
+      void onEvent(int event, Bundle param);
+    }
+
+    /**
+     * 发送文本消息回调接口
+     */
+    public interface SendRoomTextMsgCallback {
+      /**
+       * 错误回调
        *
-       * @param anchorInfo 退房用户信息
+       * @param errCode 错误码
+       * @param errInfo 错误信息
+       */
+
+      void onError(int errCode, String errInfo);
+
+      /**
+       * 成功回调
+       */
+      void onSuccess();
+    }
+
+    /**
+     * 发送自定义消息回调接口
+     */
+    public interface SendRoomCustomMsgCallback {
+      /**
+       * 错误回调
        *
-       * @note 直播间里的普通观众不会收到主播加入和推出的通知。
+       * @param errCode 错误码
+       * @param errInfo 错误信息
        */
-      public void onAnchorExit(AnchorInfo anchorInfo);
+      void onError(int errCode, String errInfo);
 
       /**
-       * 收到观众进房通知
+       * 成功回调
+       */
+      void onSuccess();
+    }
+
+    /**
+     * 设置自定义信息回调接口
+     */
+    public interface SetCustomInfoCallback {
+      /**
+       * 错误回调
        *
-       * @param audienceInfo 进房观众信息
+       * @param errCode 错误码
+       * @param errInfo 错误信息
        */
-      public void onAudienceEnter(AudienceInfo audienceInfo) ;
+      void onError(int errCode, String errInfo);
 
       /**
-       * 收到观众退房通知
+       * 成功回调
+       */
+      void onSuccess();
+    }
+
+    /**
+     * 获取自定义信息回调接口
+     */
+    public interface GetCustomInfoCallback {
+      /**
+       * 错误回调
        *
-       * @param audienceInfo 退房观众信息
+       * @param errCode 错误码
+       * @param errInfo 错误信息
        */
-      public void onAudienceExit(AudienceInfo audienceInfo) ;
+      void onError(int errCode, String errInfo);
 
-
-      /////////////////////////////////////////////////////////////////////////////////
-      //
-      //                      主播和观众连麦事件回调
-      //
-      /////////////////////////////////////////////////////////////////////////////////
       /**
-       * 主播收到观众连麦请求时的回调
+       * 获取自定义信息的回调
        *
-       * @param anchorInfo 观众信息
-       * @param reason 连麦原因描述
+       * @param customInfo 自定义信息
        */
-      public void onRequestJoinAnchor(AnchorInfo anchorInfo, String reason) ;
-
-      /**
-       * 连麦观众收到被踢出连麦的通知
-       *
-       * 连麦观众收到被主播踢除连麦的消息，您需要调用 {@link MLVBLiveRoom#kickoutJoinAnchor(String)} 来退出连麦
-       */
-      public void onKickoutJoinAnchor() ;
-
-
-      /////////////////////////////////////////////////////////////////////////////////
-      //
-      //                      主播 PK 事件回调
-      //
-      /////////////////////////////////////////////////////////////////////////////////
-      /**
-       * 收到请求跨房 PK 通知
-       *
-       * 主播收到其他房间主播的 PK 请求
-       * 如果同意 PK ，您需要调用 {@link MLVBLiveRoom#startRemoteView(AnchorInfo, TXCloudVideoView, PlayCallback)}  接口播放邀约主播的流
-       *
-       * @param anchorInfo 发起跨房连麦的主播信息
-       */
-      public void onRequestRoomPK(AnchorInfo anchorInfo) ;
-
-
-      /**
-       * 收到断开跨房 PK 通知
-       */
-      public void onQuitRoomPK(AnchorInfo anchorInfo) ;
-
-      /// @}
-
-      /////////////////////////////////////////////////////////////////////////////////
-      //
-      //                      消息事件回调
-      //
-      /////////////////////////////////////////////////////////////////////////////////
-
-      /// @name 消息事件回调
-      /// @{
-
-      /**
-       * 收到文本消息
-       *
-       * @param roomID        房间 ID
-       * @param userID        发送者 ID
-       * @param userName      发送者昵称
-       * @param userAvatar    发送者头像
-       * @param message       文本消息
-       */
-      public void onRecvRoomTextMsg(String roomID, String userID, String userName, String userAvatar, String message) ;
-
-      /**
-       * 收到自定义消息
-       *
-       * @param roomID        房间 ID
-       * @param userID        发送者 ID
-       * @param userName      发送者昵称
-       * @param userAvatar    发送者头像
-       * @param cmd           自定义 cmd
-       * @param message       自定义消息内容
-       */
-      public void onRecvRoomCustomMsg(String roomID, String userID, String userName, String userAvatar, String cmd, String message) ;
-
-      /// @}
-
-      /**
-       * 登录结果回调接口
-       */
-      public interface LoginCallback {
-          /**
-           * 错误回调
-           *
-           * @param errCode 错误码
-           * @param errInfo 错误信息
-           */
-          void onError(int errCode, String errInfo);
-
-          /**
-           * 成功回调
-           */
-          void onSuccess();
-      }
-
-      /**
-       * 获取房间列表回调接口
-       */
-      public interface GetRoomListCallback {
-          /**
-           * 错误回调
-           *
-           * @param errCode 错误码
-           * @param errInfo 错误信息
-           */
-          void onError(int errCode, String errInfo);
-
-          /**
-           * 成功回调
-           *
-           * @param roomInfoList 房间列表
-           */
-          void onSuccess(ArrayList<RoomInfo> roomInfoList);
-      }
-
-      /**
-       * 获取观众列表回调接口
-       *
-       * 观众进房时，后台会将其信息加入观众列表中，观众列表最大保存30名观众信息。
-       */
-      public interface GetAudienceListCallback {
-          /**
-           * 错误回调
-           *
-           * @param errCode 错误码
-           * @param errInfo 错误信息
-           */
-          void onError(int errCode, String errInfo);
-
-          /**
-           * 成功回调
-           *
-           * @param audienceInfoList 观众列表
-           */
-          void onSuccess(ArrayList<AudienceInfo> audienceInfoList);
-      }
-
-      /**
-       * 创建房间的结果回调接口
-       */
-      public interface CreateRoomCallback {
-          /**
-           * 错误回调
-           *
-           * @param errCode 错误码
-           * @param errInfo 错误信息
-           */
-          void onError(int errCode, String errInfo);
-
-          /**
-           * 成功回调
-           *
-           * @param RoomID 房间号标识
-           */
-          void onSuccess(String RoomID);
-      }
-
-      /**
-       * 进入房间的结果回调接口
-       */
-      public interface EnterRoomCallback {
-          /**
-           * 错误回调
-           *
-           * @param errCode 错误码
-           * @param errInfo 错误信息
-           */
-          void onError(int errCode, String errInfo);
-
-          /**
-           * 成功回调
-           */
-          void onSuccess();
-      }
-
-      /**
-       * 离开房间的结果回调接口
-       */
-      public interface ExitRoomCallback {
-          /**
-           * 错误回调
-           *
-           * @param errCode 错误码
-           * @param errInfo 错误信息
-           */
-          void onError(int errCode, String errInfo);
-
-          /**
-           * 成功回调
-           */
-          void onSuccess();
-      }
-
-      /**
-       * 观众请求连麦的结果回调接口
-       */
-      public interface RequestJoinAnchorCallback {
-          /**
-           * 主播接受连麦
-           */
-          void onAccept();
-
-          /**
-           * 主播拒绝连麦
-           * @param reason 拒绝原因
-           */
-          void onReject(String reason);
-
-          /**
-           * 请求超时
-           */
-          void onTimeOut();
-
-          /**
-           * 错误回调
-           *
-           * @param errCode 错误码
-           * @param errInfo 错误信息
-           */
-          void onError(int errCode, String errInfo);
-      }
-
-      /**
-       * 进入连麦的结果回调接口
-       */
-      public interface JoinAnchorCallback {
-          /**
-           * 错误回调
-           *
-           * @param errCode 错误码 RequestRoomPKCallback
-           * @param errInfo 错误信息
-           */
-          void onError(int errCode, String errInfo);
-
-          /**
-           * 成功回调
-           */
-          void onSuccess();
-      }
-
-      /**
-       * 退出连麦的结果回调接口
-       */
-      public interface QuitAnchorCallback {
-          /**
-           * 错误回调
-           *
-           * @param errCode 错误码
-           * @param errInfo 错误信息
-           */
-          void onError(int errCode, String errInfo);
-
-          /**
-           * 成功回调
-           */
-          void onSuccess();
-      }
-
-      /**
-       * 请求跨房 PK 的结果回调接口
-       */
-      public interface RequestRoomPKCallback {
-          /**
-           * 主播接受连麦
-           *
-           * @param anchorInfo 被邀请 PK 主播的信息
-           */
-          void onAccept(AnchorInfo anchorInfo);
-
-          /**
-           * 拒绝 PK
-           *
-           * @param reason 拒绝原因
-           */
-          void onReject(String reason);
-
-          /**
-           * 请求超时
-           */
-          void onTimeOut();
-
-          /**
-           * 错误回调
-           *
-           * @param errCode 错误码
-           * @param errInfo 错误信息
-           */
-          void onError(int errCode, String errInfo);
-      }
-
-      /**
-       * 退出跨房 PK 的结果回调接口
-       */
-      public interface QuitRoomPKCallback {
-          /**
-           * 错误回调
-           *
-           * @param errCode 错误码
-           * @param errInfo 错误信息
-           */
-          void onError(int errCode, String errInfo);
-
-          /**
-           * 成功回调
-           */
-          void onSuccess();
-      }
-
-      /**
-       * 播放器回调接口
-       */
-      public interface PlayCallback {
-          /**
-           * 开始回调
-           */
-          void onBegin();
-          /**
-           * 错误回调
-           *
-           * @param errCode 错误码
-           * @param errInfo 错误信息
-           */
-          void onError(int errCode, String errInfo);
-
-          /**
-           * 其他事件回调
-           *
-           * @param event 事件 ID
-           * @param param 事件附加信息
-           */
-          void onEvent(int event, Bundle param);
-      }
-
-      /**
-       * 发送文本消息回调接口
-       */
-      public interface SendRoomTextMsgCallback{
-          /**
-           * 错误回调
-           *
-           * @param errCode 错误码
-           * @param errInfo 错误信息
-           */
-
-          void onError(int errCode, String errInfo);
-          /**
-           * 成功回调
-           */
-          void onSuccess();
-      }
-
-      /**
-       * 发送自定义消息回调接口
-       */
-      public interface SendRoomCustomMsgCallback{
-          /**
-           * 错误回调
-           *
-           * @param errCode 错误码
-           * @param errInfo 错误信息
-           */
-          void onError(int errCode, String errInfo);
-
-          /**
-           * 成功回调
-           */
-          void onSuccess();
-      }
-
-      /**
-       * 设置自定义信息回调接口
-       */
-      public interface SetCustomInfoCallback {
-          /**
-           * 错误回调
-           *
-           * @param errCode 错误码
-           * @param errInfo 错误信息
-           */
-          void onError(int errCode, String errInfo);
-
-          /**
-           * 成功回调
-           */
-          void onSuccess();
-      }
-
-      /**
-       * 获取自定义信息回调接口
-       */
-      public interface GetCustomInfoCallback {
-          /**
-           * 错误回调
-           *
-           * @param errCode 错误码
-           * @param errInfo 错误信息
-           */
-          void onError(int errCode, String errInfo);
-
-          /**
-           * 获取自定义信息的回调
-           *
-           * @param customInfo 自定义信息
-           */
-          void onGetCustomInfo(Map<String, Object> customInfo);
-      }
+      void onGetCustomInfo(Map<String, Object> customInfo);
+    }
   }
 }

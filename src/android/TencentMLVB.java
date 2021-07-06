@@ -1,18 +1,25 @@
 package com.qcloud.cordova.mlvb;
 
+import android.app.Service;
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.Color;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
-import android.util.Log;
-import android.view.View;
+import android.os.StrictMode;
 
 import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.graphics.Color;
+import android.telephony.PhoneStateListener;
+import android.telephony.TelephonyManager;
+import android.text.TextUtils;
+import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -21,18 +28,26 @@ import android.widget.FrameLayout;
 import org.apache.cordova.*;
 
 import org.json.JSONArray;
-import org.json.JSONObject;
 import org.json.JSONException;
-
-import com.google.gson.Gson;
+import org.json.JSONObject;
 
 //import com.tencent.av.sdk.*;
 //import com.tencent.ilivesdk.*;
 //import com.tencent.ilivesdk.core.*;
 //import com.tencent.livesdk.*;
 
+import com.google.gson.Gson;
 import com.qcloud.cordova.mlvb.common.MLVBCommonDef;
 import com.qcloud.cordova.mlvb.utils.TCUtils;
+import com.tencent.liteav.basic.log.TXCLog;
+import com.tencent.live2.V2TXLiveCode;
+import com.tencent.live2.V2TXLiveDef;
+import com.tencent.live2.V2TXLivePlayer;
+import com.tencent.live2.V2TXLivePlayerObserver;
+import com.tencent.live2.V2TXLivePusher;
+import com.tencent.live2.V2TXLivePusherObserver;
+import com.tencent.live2.impl.V2TXLivePlayerImpl;
+import com.tencent.live2.impl.V2TXLivePusherImpl;
 import com.tencent.rtmp.ITXLivePlayListener;
 import com.tencent.rtmp.ITXLivePushListener;
 import com.tencent.rtmp.TXLiveBase;
@@ -41,10 +56,11 @@ import com.tencent.rtmp.TXLivePlayConfig;
 import com.tencent.rtmp.TXLivePlayer;
 import com.tencent.rtmp.TXLivePushConfig;
 import com.tencent.rtmp.TXLivePusher;
+import com.tencent.rtmp.TXLog;
 import com.tencent.rtmp.ui.TXCloudVideoView;
 
-import com.tencent.liteav.basic.log.TXCLog;
-
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.security.InvalidParameterException;
@@ -52,12 +68,779 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Vector;
 
+import static com.tencent.live2.V2TXLiveDef.V2TXLiveVideoResolutionMode.V2TXLiveVideoResolutionModeLandscape;
+import static com.tencent.live2.V2TXLiveDef.V2TXLiveVideoResolutionMode.V2TXLiveVideoResolutionModePortrait;
+
 
 public class TencentMLVB extends CordovaPlugin {
-  private static final String TAG = TencentMLVB.class.getName();
-  private Context context;
-  protected MLVBCommonDef.IMLVBLiveRoomListener mListener = null;
+  private CallbackContext callbackContext;
   private Activity activity;
+  private final String[] permissions = {
+    Manifest.permission.INTERNET,
+    Manifest.permission.ACCESS_NETWORK_STATE,
+    Manifest.permission.ACCESS_WIFI_STATE,
+    Manifest.permission.READ_PHONE_STATE,
+//            Manifest.permission.CALL_PHONE,
+    Manifest.permission.WRITE_EXTERNAL_STORAGE,
+    Manifest.permission.READ_EXTERNAL_STORAGE,
+//            Manifest.permission.READ_LOGS,
+    Manifest.permission.RECORD_AUDIO,
+    Manifest.permission.MODIFY_AUDIO_SETTINGS,
+    Manifest.permission.BLUETOOTH,
+    Manifest.permission.CAMERA
+  };
+  private CordovaWebView cordovaWebView;
+
+  /**
+   * Sets the context of the Command. This can then be used to do things like
+   * get file paths associated with the Activity.
+   *
+   * @param cordova The context of the main Activity.
+   * @param webView The CordovaWebView Cordova is running in.
+   */
+  @Override
+  public void initialize(CordovaInterface cordova, CordovaWebView webView) {
+    super.initialize(cordova, webView);
+    this.activity = cordova.getActivity();
+    this.cordovaWebView = webView;
+    MLVBRoomImpl.getInstance(cordova, webView);
+  }
+
+  /**
+   * Executes the request and returns PluginResult.
+   *
+   * @param action          The action to execute.
+   * @param args            JSONArry of arguments for the plugin.
+   * @param callbackContext The callback id used when calling back into JavaScript.
+   * @return True if the action was valid, false if not.
+   */
+  @Override
+  public boolean execute(String action, JSONArray args, final CallbackContext callbackContext) throws JSONException {
+
+    if (!hasPermisssion()) {
+      requestPermissions(0);
+    }
+
+    this.callbackContext = callbackContext;
+    MLVBRoomImpl mlvbInstance = MLVBRoomImpl.getInstance();
+    switch (action) {
+      case "getVersion":
+        return mlvbInstance.getVersion(callbackContext);
+      case "startPush": {
+        final String url = args.getString(0);
+        return mlvbInstance.startPush(callbackContext);
+      }
+      case "stopPush":
+        return mlvbInstance.stopPush(callbackContext);
+      case "onPushEvent":
+        alert("尚未实现");
+        break;
+      case "startPlay": {
+        final String url = args.getString(0);
+        final int playType = args.getInt(1);
+        return mlvbInstance.startPlay(callbackContext);
+      }
+      case "stopPlay":
+        return mlvbInstance.stopPlay(callbackContext);
+//      case "onPlayEvent":
+//        alert("尚未实现");
+//        break;
+//      case "setVideoQuality":
+//        if (mlvbInstance.mLivePusher == null) return false;
+//        final int quality = args.getInt(0);
+//        final int adjustBitrate = args.getInt(1);
+//        final int adjustResolution = args.getInt(2);
+////            mLivePusher.setVideoQuality(quality, adjustBitrate, adjustResolution);
+//        mlvbInstance.mLivePusher.setVideoQuality(quality, true, true);
+//        break;
+//      case "setBeautyFilterDepth":
+//        if (mlvbInstance.mLivePusher == null) return false;
+//        final int beautyDepth = args.getInt(0);
+//        final int whiteningDepth = args.getInt(1);
+//        mlvbInstance.mLivePusher.setBeautyFilter(1, beautyDepth, whiteningDepth, 5);
+//        break;
+//      case "setExposureCompensation":
+//        // TODO: 尚未测试
+//        if (mlvbInstance.mLivePusher == null) return false;
+//        final float depth = (float) args.getDouble(0);
+//        mlvbInstance.mLivePusher.setExposureCompensation(depth);
+//        break;
+//      case "setFilter":
+//        alert("尚未实现");
+//        break;
+//      case "switchCamera":
+//        if (mlvbInstance.mLivePusher == null) return false;
+//        mlvbInstance.mLivePusher.switchCamera();
+//        break;
+//      case "toggleTorch":
+//        // TODO: 尚未测试
+//        if (mlvbInstance.mLivePusher == null) return false;
+//        final boolean enabled = args.getBoolean(0);
+//        mlvbInstance.mLivePusher.turnOnFlashLight(enabled);
+//        break;
+//      case "setFocusPosition":
+//        alert("尚未实现");
+//        break;
+//      case "setWaterMark":
+//        alert("尚未实现");
+//        break;
+//      case "setPauseImage":
+//        alert("尚未实现");
+//        break;
+//      case "resize":
+//        alert("尚未实现");
+//        break;
+//      case "pause":
+//        alert("尚未实现");
+//        break;
+//      case "resume":
+//        alert("尚未实现");
+//        break;
+//      case "setRenderMode":
+//        alert("尚未实现");
+//        break;
+//      case "setRenderRotation":
+//        alert("尚未实现");
+//        break;
+//      case "enableHWAcceleration":
+//        alert("尚未实现");
+//        break;
+//      case "startRecord":
+////            return startRecord(callbackContext);
+//        break;
+//      case "stopRecord":
+////            return stopRecord(callbackContext);
+//        break;
+      case "fixMinFontSize":
+//            return stopRecord(callbackContext);
+        return fixMinFontSize(callbackContext);
+    }
+
+    callbackContext.error("Undefined action: " + action);
+    return false;
+
+  }
+
+  /**
+   * 设置最小字号
+   *
+   * @param callbackContext
+   * @return
+   */
+  private boolean fixMinFontSize(final CallbackContext callbackContext) {
+    try {
+      WebSettings settings = ((WebView) cordovaWebView.getEngine().getView()).getSettings();
+      settings.setMinimumFontSize(1);
+      settings.setMinimumLogicalFontSize(1);
+    } catch (Exception error) {
+      callbackContext.error("10003");
+      return false;
+    }
+    return true;
+  }
+
+  public void alert(String msg) {
+    alert(msg, "系统提示");
+  }
+
+  public void alert(String msg, String title) {
+    new AlertDialog.Builder(this.activity)
+      .setTitle(title)
+      .setMessage(msg)//设置显示的内容
+      .setPositiveButton("确定", new DialogInterface.OnClickListener() {//添加确定按钮
+        @Override
+        public void onClick(DialogInterface dialog, int which) {//确定按钮的响应事件
+          // TODO Auto-generated method stub
+//                        finish();
+        }
+      }).show();//在按键响应事件中显示此对话框
+  }
+
+
+
+  @Override
+  public void onActivityResult(int requestCode, int resultCode, Intent intent) {
+    String statusCode;
+    switch (requestCode) {
+      case 990:  // demoPush
+        if (resultCode == 1) {
+          statusCode = "success";
+          callbackContext.success(statusCode);
+        }
+        break;
+      default:
+        break;
+    }
+  }
+
+  /**
+   * check application's permissions
+   */
+  public boolean hasPermisssion() {
+    for (String p : permissions) {
+      if (!PermissionHelper.hasPermission(this, p)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /**
+   * We override this so that we can access the permissions variable, which no longer exists in
+   * the parent class, since we can't initialize it reliably in the constructor!
+   *
+   * @param requestCode The code to get request action
+   */
+  public void requestPermissions(int requestCode) {
+    PermissionHelper.requestPermissions(this, requestCode, permissions);
+  }
+}
+
+
+class MLVBRoomImpl {
+  private static final String TAG = MLVBRoomImpl.class.getName();
+  private static MLVBRoomImpl instance;
+  public V2TXLivePusher mLivePusher;                //直播推流
+  private V2TXLivePlayer mLivePlayer;               //直播拉流的视频播放器
+  private CordovaInterface cordova;
+  private CordovaWebView cordovaWebView;
+  private boolean mIsResume;
+  private boolean mIsPushing;
+  private TXLivePusher mTXLivePusher;
+  private boolean mIsPlaying;
+
+  private MLVBRoomImpl(CordovaInterface cordova, CordovaWebView webView) {
+    this.cordova = cordova;
+    this.cordovaWebView = webView;
+    this.initilize();
+  }
+
+  public  static MLVBRoomImpl getInstance() {
+    return MLVBRoomImpl.instance;
+  }
+  public static MLVBRoomImpl getInstance(CordovaInterface cordova, CordovaWebView webView) {
+    if (MLVBRoomImpl.instance == null) {
+      synchronized (MLVBRoomImpl.TAG) {
+        if (MLVBRoomImpl.instance == null) {
+          MLVBRoomImpl.instance = new MLVBRoomImpl(cordova, webView);
+          MLVBRoomImpl.instance.initilize();
+        }
+      }
+    }
+    return MLVBRoomImpl.instance;
+  }
+
+  private void initilize() {
+    TXLiveBase.setConsoleEnabled(true);
+
+    TXLiveBase.getInstance().setLicence(this.cordova.getActivity().getApplicationContext(), MLVBCommonDef.TCGlobalConfig.LICENCE_URL, MLVBCommonDef.TCGlobalConfig.LICENCE_KEY);
+
+    // 短视频licence设置
+    StrictMode.VmPolicy.Builder builder = new StrictMode.VmPolicy.Builder();
+    StrictMode.setVmPolicy(builder.build());
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
+      builder.detectFileUriExposure();
+    }
+    this.closeAndroidPDialog();
+  }
+
+  private TXCloudVideoView videoView;
+
+  public int _R(String defType, String name) {
+    Activity activity = cordova.getActivity();
+    return activity.getApplication().getResources().getIdentifier(
+      name, defType, activity.getApplication().getPackageName());
+  }
+
+  /**
+      * 在当前 Activity 底部 UI 层注册一个 TXCloudVideoView 以供直播渲染
+      */
+  private void prepareVideoView() {
+    if (videoView != null) return;
+    // 通过 layout 文件插入 videoView
+    LayoutInflater layoutInflater = LayoutInflater.from(this.cordova.getActivity());
+    videoView = (TXCloudVideoView) layoutInflater.inflate(_R("layout", "layout_video"), null);
+    // 设置 webView 透明
+    videoView.setLayoutParams(new FrameLayout.LayoutParams(
+      FrameLayout.LayoutParams.MATCH_PARENT,
+      FrameLayout.LayoutParams.MATCH_PARENT
+    ));
+    ViewGroup rootView = this.cordova.getActivity().findViewById(android.R.id.content);
+    // 插入视图
+    rootView.addView(videoView);
+    videoView.setVisibility(View.VISIBLE);
+    View webView = this.cordovaWebView.getView();
+    // 设置 webView 透明
+    webView.setBackgroundColor(Color.TRANSPARENT);
+    // 关闭 webView 的硬件加速（否则不能透明）
+    webView.setLayerType(WebView.LAYER_TYPE_SOFTWARE, null);
+    // 将 webView 提到顶层
+    webView.bringToFront();
+  }
+
+  /**
+   * 销毁 videoView
+   */
+  private void destroyVideoView() {
+    if (videoView == null) return;
+    videoView.onDestroy();
+    ViewGroup rootView = this.cordova.getActivity().findViewById(android.R.id.content);
+    rootView.removeView(videoView);
+    videoView = null;
+
+    // 把 webView 变回白色
+    View webView = this.cordovaWebView.getView();
+    webView.setBackgroundColor(Color.WHITE);
+  }
+
+  private void initPuherListener() {
+    TXPhoneStateListener mPhoneListener = new TXPhoneStateListener();
+    TelephonyManager tm = (TelephonyManager) this.cordova.getActivity().getSystemService(Service.TELEPHONY_SERVICE);
+    tm.listen(mPhoneListener, PhoneStateListener.LISTEN_CALL_STATE);
+  }
+
+  private void resume() {
+    TXLog.i(TAG, "resume: mIsResume -> " + mIsResume);
+    if (mIsResume) {
+      return;
+    }
+    if (videoView != null) {
+      videoView.onResume();
+    }
+    mIsResume = true;
+  }
+
+  private void pause() {
+    TXLog.i(TAG, "pause: mIsResume -> " + mIsResume);
+    if (videoView != null) {
+      videoView.onPause();
+    }
+    mIsResume = false;
+//    mAudioEffectPanel.pauseBGM();
+  }
+  /**
+   * 电话监听
+   */
+  private class TXPhoneStateListener extends PhoneStateListener {
+
+    @Override
+    public void onCallStateChanged(int state, String incomingNumber) {
+      super.onCallStateChanged(state, incomingNumber);
+      TXLog.i(TAG, "onCallStateChanged: state -> " + state);
+      switch (state) {
+        case TelephonyManager.CALL_STATE_RINGING:   //电话等待接听
+        case TelephonyManager.CALL_STATE_OFFHOOK:   //电话接听
+          pause();
+          break;
+        case TelephonyManager.CALL_STATE_IDLE:      //电话挂机
+          resume();
+          break;
+      }
+    }
+  }
+
+  private void initTxLivePusher() {
+    mLivePusher = new V2TXLivePusherImpl(this.cordova.getActivity(), V2TXLiveDef.V2TXLiveMode.TXLiveMode_RTMP);
+    // 设置默认美颜参数， 美颜样式为光滑，美颜等级 5，美白等级 3，红润等级 2
+    mLivePusher.getBeautyManager().setBeautyStyle(TXLiveConstants.BEAUTY_STYLE_SMOOTH);
+    mLivePusher.getBeautyManager().setBeautyLevel(5);
+    mLivePusher.getBeautyManager().setWhitenessLevel(3);
+    mLivePusher.getBeautyManager().setRuddyLevel(2);
+
+    initPuherListener();
+  }
+
+  private void initTxLivePlayer() {
+    mLivePlayer = new V2TXLivePlayerImpl(this.cordova.getActivity());
+    TXLivePlayConfig config = new TXLivePlayConfig();
+  }
+
+  private void initTxLivePusherV1() {
+    if (mTXLivePusher == null) {
+      mTXLivePusher = new TXLivePusher(this.cordova.getActivity());
+    }
+    TXLivePushConfig config = new TXLivePushConfig();
+    config.setFrontCamera(true);
+    config.enableScreenCaptureAutoRotate(true);// 是否开启屏幕自适应
+    config.setPauseFlag(TXLiveConstants.PAUSE_FLAG_PAUSE_VIDEO | TXLiveConstants.PAUSE_FLAG_PAUSE_AUDIO);
+    mTXLivePusher.setConfig(config);
+    mTXLivePusher.setBeautyFilter(TXLiveConstants.BEAUTY_STYLE_SMOOTH, 5, 3, 2);
+//    mTXLivePushListener = new TXLivePushListenerImpl();
+//    mTXLivePusher.setPushListener(mTXLivePushListener);
+  }
+
+  public boolean startPlay(final CallbackContext callbackContext) {
+    String playURL = this.createPullUrl(null);
+
+    Activity activity = this.cordova.getActivity();
+    activity.runOnUiThread(new Runnable() {
+      @Override
+      public void run() {
+        if (videoView == null) {
+          prepareVideoView();
+        }
+        if (mLivePlayer == null) {
+          initTxLivePlayer();
+        }
+        videoView.setVisibility(View.VISIBLE);
+        mLivePlayer.setRenderView(videoView);
+        mLivePlayer.setObserver(new MyPlayerObserver());
+
+        mLivePlayer.setRenderRotation(V2TXLiveDef.V2TXLiveRotation.V2TXLiveRotation0);
+        mLivePlayer.setRenderFillMode(V2TXLiveDef.V2TXLiveFillMode.V2TXLiveFillModeFit);
+
+        /**
+         * result返回值：
+         * 0 V2TXLIVE_OK; -2 V2TXLIVE_ERROR_INVALID_PARAMETER; -3 V2TXLIVE_ERROR_REFUSED;
+         */
+        int code = mLivePlayer.startPlay(playURL);
+        mLivePlayer.setRenderView(videoView);
+        TXLog.i(TAG, String.format("%d", code));
+        mIsPlaying = true;
+      }
+    });
+
+    return true;
+  }
+
+  public boolean stopPlay(final CallbackContext callbackContext) {
+    if (!mIsPlaying) {
+      return true;
+    }
+    if (mLivePlayer != null) {
+      mLivePlayer.setObserver(null);
+      mLivePlayer.stopPlay();
+    }
+    mIsPlaying = false;
+    return true;
+  }
+
+  private class MyPlayerObserver extends V2TXLivePlayerObserver {
+
+    @Override
+    public void onWarning(V2TXLivePlayer player, int code, String msg, Bundle extraInfo) {
+      Log.w(TAG, "[Player] onWarning: player-" + player + " code-" + code + " msg-" + msg + " info-" + extraInfo);
+    }
+
+    @Override
+    public void onError(V2TXLivePlayer player, int code, String msg, Bundle extraInfo) {
+      Log.e(TAG, "[Player] onError: player-" + player + " code-" + code + " msg-" + msg + " info-" + extraInfo);
+    }
+
+    @Override
+    public void onSnapshotComplete(V2TXLivePlayer v2TXLivePlayer, Bitmap bitmap) {
+    }
+
+    @Override
+    public void onVideoPlayStatusUpdate(V2TXLivePlayer player, V2TXLiveDef.V2TXLivePlayStatus status, V2TXLiveDef.V2TXLiveStatusChangeReason reason, Bundle bundle) {
+      Log.i(TAG, "[Player] onVideoPlayStatusUpdate: player-" + player + ", status-" + status + ", reason-" + reason);
+      switch (status) {
+        case V2TXLivePlayStatusLoading:
+          break;
+        case V2TXLivePlayStatusPlaying:
+          break;
+        default:
+          break;
+      }
+    }
+
+    @Override
+    public void onAudioPlayStatusUpdate(V2TXLivePlayer player, V2TXLiveDef.V2TXLivePlayStatus status, V2TXLiveDef.V2TXLiveStatusChangeReason reason, Bundle bundle) {
+      Log.i(TAG, "[Player] onAudioPlayStatusUpdate: player-" + player + ", status-" + status + ", reason-" + reason);
+      switch (status) {
+        case V2TXLivePlayStatusLoading:
+          break;
+        case V2TXLivePlayStatusPlaying:
+          break;
+        default:
+          break;
+      }
+    }
+
+    @Override
+    public void onPlayoutVolumeUpdate(V2TXLivePlayer player, int volume) {
+//            Log.i(TAG, "onPlayoutVolumeUpdate: player-" + player +  ", volume-" + volume);
+    }
+
+    @Override
+    public void onStatisticsUpdate(V2TXLivePlayer player, V2TXLiveDef.V2TXLivePlayerStatistics statistics) {
+      Bundle netStatus = new Bundle();
+      netStatus.putInt(TXLiveConstants.NET_STATUS_VIDEO_WIDTH, statistics.width);
+      netStatus.putInt(TXLiveConstants.NET_STATUS_VIDEO_HEIGHT, statistics.height);
+      int appCpu = statistics.appCpu / 10;
+      int totalCpu = statistics.systemCpu / 10;
+      String strCpu = appCpu + "/" + totalCpu + "%";
+      netStatus.putCharSequence(TXLiveConstants.NET_STATUS_CPU_USAGE, strCpu);
+      netStatus.putInt(TXLiveConstants.NET_STATUS_NET_SPEED, statistics.videoBitrate + statistics.audioBitrate);
+      netStatus.putInt(TXLiveConstants.NET_STATUS_AUDIO_BITRATE, statistics.audioBitrate);
+      netStatus.putInt(TXLiveConstants.NET_STATUS_VIDEO_BITRATE, statistics.videoBitrate);
+      netStatus.putInt(TXLiveConstants.NET_STATUS_VIDEO_FPS, statistics.fps);
+      netStatus.putInt(TXLiveConstants.NET_STATUS_AUDIO_CACHE, 0);
+      netStatus.putInt(TXLiveConstants.NET_STATUS_VIDEO_CACHE, 0);
+      netStatus.putInt(TXLiveConstants.NET_STATUS_V_SUM_CACHE_SIZE, 0);
+      netStatus.putInt(TXLiveConstants.NET_STATUS_V_DEC_CACHE_SIZE, 0);
+      netStatus.putString(TXLiveConstants.NET_STATUS_AUDIO_INFO, "");
+      Log.d(TAG, "Current status, CPU:" + netStatus.getString(TXLiveConstants.NET_STATUS_CPU_USAGE) +
+        ", RES:" + netStatus.getInt(TXLiveConstants.NET_STATUS_VIDEO_WIDTH) + "*" + netStatus.getInt(TXLiveConstants.NET_STATUS_VIDEO_HEIGHT) +
+        ", SPD:" + netStatus.getInt(TXLiveConstants.NET_STATUS_NET_SPEED) + "Kbps" +
+        ", FPS:" + netStatus.getInt(TXLiveConstants.NET_STATUS_VIDEO_FPS) +
+        ", ARA:" + netStatus.getInt(TXLiveConstants.NET_STATUS_AUDIO_BITRATE) + "Kbps" +
+        ", VRA:" + netStatus.getInt(TXLiveConstants.NET_STATUS_VIDEO_BITRATE) + "Kbps");
+    }
+
+  }
+
+  private String createPullUrl(String userId) {
+    String pullDomainKey = MLVBCommonDef.TCGlobalConfig.PULL_DOMAIN_KEY;
+    String roomID;
+    if (userId == null || userId.isEmpty()) {
+      roomID = "RoomDefault";
+    } else {
+      roomID = userId;
+    }
+    String pullURL = "rtmp://" + MLVBCommonDef.TCGlobalConfig.PULL_DOMAIN_URL + "/" + MLVBCommonDef.TCGlobalConfig.APP_NAME + "/" + roomID + "?";
+
+    long time = System.currentTimeMillis() / 1000 + MLVBCommonDef.TCGlobalConfig.EXPIRETIME;
+    String timeHex = String.format("%x", time).toUpperCase();
+    String sig = TCUtils.md5(String.format("%s%s%s", pullDomainKey, roomID, timeHex));
+    pullURL += String.format("txSecret=%s&txTime=%s", sig, timeHex);
+    return pullURL;
+  }
+
+  private String createPushUrl(String userId) {
+    String pushDomainKey = MLVBCommonDef.TCGlobalConfig.PUSH_DOMAIN_KEY;
+    String roomID;
+    if (userId == null || userId.isEmpty()) {
+      roomID = "RoomDefault";
+    } else {
+      roomID = userId;
+    }
+    String pushURL = "rtmp://" + MLVBCommonDef.TCGlobalConfig.PUSH_DOMAIN_URL + "/" + MLVBCommonDef.TCGlobalConfig.APP_NAME + "/" + roomID + "?";
+
+    long time = System.currentTimeMillis() / 1000 + MLVBCommonDef.TCGlobalConfig.EXPIRETIME;
+    time = 0x612DD29C;
+    String timeHex = String.format("%x", time).toUpperCase();
+    String sig = TCUtils.md5(String.format("%s%s%s", pushDomainKey, roomID, timeHex));
+    pushURL += String.format("txSecret=%s&txTime=%s", sig, timeHex);
+    return pushURL;
+  }
+
+  public boolean startPush(final CallbackContext callbackContext) {
+    int resultCode = MLVBCommonDef.Constants.PLAY_STATUS_SUCCESS;
+    String tRTMPURL = this.createPushUrl(null);
+    if (TextUtils.isEmpty(tRTMPURL) || (!tRTMPURL.trim().toLowerCase().startsWith("rtmp://"))) {
+      resultCode = MLVBCommonDef.Constants.PLAY_STATUS_INVALID_URL;
+    } else {
+      //在主线程开启推流
+      Activity activity = this.cordova.getActivity();
+      activity.runOnUiThread(new Runnable() {
+
+        @Override
+        public void run() {
+          if (videoView == null) {
+            prepareVideoView();
+          }
+          View mPusherView = videoView;
+          // 显示本地预览的View
+          mPusherView.setVisibility(View.VISIBLE);
+          initTxLivePusher();
+          // 添加播放回调
+          mLivePusher.setObserver(new MyPusherObserver());
+          // 设置推流分辨率
+          mLivePusher.setVideoQuality(V2TXLiveDef.V2TXLiveVideoResolution.V2TXLiveVideoResolution960x540, V2TXLiveVideoResolutionModePortrait);
+
+          // 是否开启观众端镜像观看
+          mLivePusher.setEncoderMirror(true);
+          // 是否打开调试信息
+//      ((TXCloudVideoView) mPusherView).showLog(true);
+
+
+          // 是否打开曝光对焦
+          mLivePusher.getDeviceManager().enableCameraAutoFocus(true);
+
+          mLivePusher.getAudioEffectManager().enableVoiceEarMonitor(true);
+//      // 设置场景
+//      setPushScene(mQualityType, mIsEnableAdjustBitrate);
+//
+//      // 设置声道，设置音频采样率，必须在 TXLivePusher.setVideoQuality 之后，TXLivePusher.startPusher之前设置才能生效
+//      setAudioQuality(mAudioQuality);
+
+          // 设置本地预览View
+          mLivePusher.setRenderView((TXCloudVideoView) mPusherView);
+          mLivePusher.startCamera(true);
+          mLivePusher.startMicrophone();
+          // 发起推流
+          int resultCode = mLivePusher.startPush(tRTMPURL.trim());
+          if (resultCode == -5) {
+            TXLog.e(TAG,"License Error");
+          }
+
+          mIsPushing = true;
+        }
+
+
+      });
+    }
+    TXLog.i(TAG, "start: mIsResume -> " + mIsResume);
+    return true;
+  }
+
+  public boolean startPushV1(final CallbackContext callbackContext) {
+    int resultCode = MLVBCommonDef.Constants.PLAY_STATUS_SUCCESS;
+    String tRTMPURL = this.createPushUrl(null);
+    if (TextUtils.isEmpty(tRTMPURL) || (!tRTMPURL.trim().toLowerCase().startsWith("rtmp://"))) {
+      resultCode = MLVBCommonDef.Constants.PLAY_STATUS_INVALID_URL;
+    } else {
+      Activity activity = this.cordova.getActivity();
+      activity.runOnUiThread(new Runnable() {
+
+        @Override
+        public void run() {
+          if (videoView == null) {
+            prepareVideoView();
+          }
+          initTxLivePusher();
+          mTXLivePusher.startCameraPreview(videoView);
+          if (mTXLivePusher != null) {
+            mTXLivePusher.setVideoQuality(5, false, false);
+            int ret = mTXLivePusher.startPusher(tRTMPURL.trim());
+            if (ret == -5) {
+              String msg = "[LiveRoom] 推流失败[license 校验失败]";
+              TXCLog.e(TAG, msg);
+              return;
+            }
+            mTXLivePusher.startCameraPreview(videoView);
+            mIsPushing = true;
+          } else {
+            String msg = "[LiveRoom] 推流失败[TXLivePusher未初始化，请确保已经调用startLocalPreview]";
+            TXCLog.e(TAG, msg);
+          }
+        }
+
+
+      });
+    }
+    TXLog.i(TAG, "start: mIsResume -> " + mIsResume);
+    return true;
+  }
+
+  public boolean stopPush(final CallbackContext callbackContext) {
+    if (!mIsPushing) {
+      return true;
+    }
+    // 停止本地预览
+    mLivePusher.stopCamera();
+    // 移除监听
+    mLivePusher.setObserver(null);
+    // 停止推流
+    mLivePusher.stopPush();
+    // 隐藏本地预览的View
+    this.videoView.setVisibility(View.GONE);
+    mIsPushing = false;
+    return true;
+  }
+
+  private class MyPusherObserver extends V2TXLivePusherObserver {
+    @Override
+    public void onWarning(int code, String msg, Bundle extraInfo) {
+      Log.w(TAG, "[Pusher] onWarning errorCode: " + code + ", msg " + msg);
+      if (code == V2TXLiveCode.V2TXLIVE_WARNING_NETWORK_BUSY) {
+//        showNetBusyTips();
+      }
+    }
+
+    @Override
+    public void onError(int code, String msg, Bundle extraInfo) {
+      Log.e(TAG, "[Pusher] onError: " + msg + ", extraInfo " + extraInfo);
+    }
+
+    @Override
+    public void onCaptureFirstAudioFrame() {
+      Log.i(TAG, "[Pusher] onCaptureFirstAudioFrame");
+    }
+
+    @Override
+    public void onCaptureFirstVideoFrame() {
+      Log.i(TAG, "[Pusher] onCaptureFirstVideoFrame");
+    }
+
+    @Override
+    public void onMicrophoneVolumeUpdate(int volume) {
+    }
+
+    @Override
+    public void onPushStatusUpdate(V2TXLiveDef.V2TXLivePushStatus status, String msg, Bundle bundle) {
+    }
+
+    @Override
+    public void onSnapshotComplete(Bitmap bitmap) {
+//      if (mLivePusher.isPushing() == 1) {
+//        if (bitmap != null) {
+//          saveSnapshotBitmap(bitmap);
+//        } else {
+//          showToast(R.string.livepusher_screenshot_fail);
+//        }
+//      } else {
+//        showToast(R.string.livepusher_screenshot_fail_push);
+//      }
+    }
+
+    @Override
+    public void onStatisticsUpdate(V2TXLiveDef.V2TXLivePusherStatistics statistics) {
+      Bundle netStatus = new Bundle();
+      netStatus.putInt(TXLiveConstants.NET_STATUS_VIDEO_WIDTH, statistics.width);
+      netStatus.putInt(TXLiveConstants.NET_STATUS_VIDEO_HEIGHT, statistics.height);
+      int appCpu = statistics.appCpu / 10;
+      int totalCpu = statistics.systemCpu / 10;
+      String strCpu = appCpu + "/" + totalCpu + "%";
+      netStatus.putCharSequence(TXLiveConstants.NET_STATUS_CPU_USAGE, strCpu);
+      netStatus.putInt(TXLiveConstants.NET_STATUS_NET_SPEED, statistics.videoBitrate + statistics.audioBitrate);
+      netStatus.putInt(TXLiveConstants.NET_STATUS_AUDIO_BITRATE, statistics.audioBitrate);
+      netStatus.putInt(TXLiveConstants.NET_STATUS_VIDEO_BITRATE, statistics.videoBitrate);
+      netStatus.putInt(TXLiveConstants.NET_STATUS_VIDEO_FPS, statistics.fps);
+      netStatus.putInt(TXLiveConstants.NET_STATUS_VIDEO_GOP, 5);
+      Log.d(TAG, "Current status, CPU:" + netStatus.getString(TXLiveConstants.NET_STATUS_CPU_USAGE) +
+        ", RES:" + netStatus.getInt(TXLiveConstants.NET_STATUS_VIDEO_WIDTH) + "*" + netStatus.getInt(TXLiveConstants.NET_STATUS_VIDEO_HEIGHT) +
+        ", SPD:" + netStatus.getInt(TXLiveConstants.NET_STATUS_NET_SPEED) + "Kbps" +
+        ", FPS:" + netStatus.getInt(TXLiveConstants.NET_STATUS_VIDEO_FPS) +
+        ", ARA:" + netStatus.getInt(TXLiveConstants.NET_STATUS_AUDIO_BITRATE) + "Kbps" +
+        ", VRA:" + netStatus.getInt(TXLiveConstants.NET_STATUS_VIDEO_BITRATE) + "Kbps");
+    }
+  }
+
+  private void closeAndroidPDialog() {
+    try {
+      Class       aClass              = Class.forName("android.content.pm.PackageParser$Package");
+      Constructor declaredConstructor = aClass.getDeclaredConstructor(String.class);
+      declaredConstructor.setAccessible(true);
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    try {
+      Class  cls            = Class.forName("android.app.ActivityThread");
+      Method declaredMethod = cls.getDeclaredMethod("currentActivityThread");
+      declaredMethod.setAccessible(true);
+      Object activityThread         = declaredMethod.invoke(null);
+      Field mHiddenApiWarningShown = cls.getDeclaredField("mHiddenApiWarningShown");
+      mHiddenApiWarningShown.setAccessible(true);
+      mHiddenApiWarningShown.setBoolean(activityThread, true);
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
+
+  public boolean getVersion(CallbackContext callbackContext) {
+    String sdkver = TXLiveBase.getSDKVersionStr();
+    callbackContext.success(sdkver);
+    return true;
+  }
+}
+
+
+class MLVBaction {
+  private static final String TAG = MLVBaction.class.getName();
+  private static MLVBaction instance;
+  protected MLVBCommonDef.IMLVBLiveRoomListener mListener = null;
   private CordovaInterface cordova;
   private CordovaWebView cordovaWebView;
   private ViewGroup rootView;
@@ -79,48 +862,35 @@ public class TencentMLVB extends CordovaPlugin {
   protected String mCurrRoomID;
   protected int mRoomStatusCode = 0;
 
-  private String[] permissions = {
-    Manifest.permission.INTERNET,
-    Manifest.permission.ACCESS_NETWORK_STATE,
-    Manifest.permission.ACCESS_WIFI_STATE,
-    Manifest.permission.READ_PHONE_STATE,
-//            Manifest.permission.CALL_PHONE,
-    Manifest.permission.WRITE_EXTERNAL_STORAGE,
-    Manifest.permission.READ_EXTERNAL_STORAGE,
-//            Manifest.permission.READ_LOGS,
-    Manifest.permission.RECORD_AUDIO,
-    Manifest.permission.MODIFY_AUDIO_SETTINGS,
-    Manifest.permission.BLUETOOTH,
-    Manifest.permission.CAMERA
-  };
+  public static MLVBaction getInstance() {
+    if (MLVBaction.instance == null) {
+      synchronized (MLVBaction.TAG) {
+        if (MLVBaction.instance == null) {
+          MLVBaction.instance = new MLVBaction();
+        }
+      }
+    }
+    return MLVBaction.instance;
+  }
 
-  /**
-   * Sets the context of the Command. This can then be used to do things like
-   * get file paths associated with the Activity.
-   *
-   * @param cordova The context of the main Activity.
-   * @param webView The CordovaWebView Cordova is running in.
-   */
-  @Override
   public void initialize(CordovaInterface cordova, CordovaWebView webView) {
-    super.initialize(cordova, webView);
     this.cordovaWebView = webView;
     this.cordova = cordova;
-    this.activity = cordova.getActivity();
-    this.context = this.activity;
+    Activity activity = cordova.getActivity();
     this.rootView = (ViewGroup) activity.findViewById(android.R.id.content);
     this.webView = (WebView) rootView.getChildAt(0);
-    this.createMLVBPlatform(this.context);
+    this.createMLVBPlatform(activity.getApplication());
   }
 
   private void createMLVBPlatform(Context context) {
     if (context == null) {
       throw new InvalidParameterException("MLVB初始化错误：context不能为空！");
     }
+
     // 必须：初始化 LiteAVSDK Licence。 用于直播推流鉴权。
     TXLiveBase.getInstance().setLicence(context, MLVBCommonDef.TCGlobalConfig.LICENCE_URL, MLVBCommonDef.TCGlobalConfig.LICENCE_KEY);
 
-    Context mAppContext = context.getApplicationContext();
+    Context mAppContext = context;
     mListenerHandler = new Handler(mAppContext.getMainLooper());
     mStreamMixturer = new StreamMixturer();
 
@@ -161,113 +931,7 @@ public class TencentMLVB extends CordovaPlugin {
     });
   }
 
-  /**
-   * Executes the request and returns PluginResult.
-   *
-   * @param action          The action to execute.
-   * @param args            JSONArry of arguments for the plugin.
-   * @param callbackContext The callback id used when calling back into JavaScript.
-   * @return True if the action was valid, false if not.
-   */
-  @Override
-  public boolean execute(String action, JSONArray args, final CallbackContext callbackContext) throws JSONException {
 
-    if (!hasPermisssion()) {
-      requestPermissions(0);
-    }
-
-    this.callbackContext = callbackContext;
-
-    if (action.equals("getVersion")) {
-      return getVersion(callbackContext);
-    } else if (action.equals("startPush")) {
-      final String url = args.getString(0);
-      return startPush(url, callbackContext);
-    } else if (action.equals("stopPush")) {
-      return stopPush(callbackContext);
-    } else if (action.equals("onPushEvent")) {
-      alert("尚未实现");
-    } else if (action.equals("startPlay")) {
-      final String url = args.getString(0);
-      final int playType = args.getInt(1);
-      return startPlay(url, playType, callbackContext);
-    } else if (action.equals("stopPlay")) {
-      return stopPlay(callbackContext);
-    } else if (action.equals("onPlayEvent")) {
-      alert("尚未实现");
-    } else if (action.equals("setVideoQuality")) {
-      if (mTXLivePusher == null) return false;
-      final int quality = args.getInt(0);
-      final int adjustBitrate = args.getInt(1);
-      final int adjustResolution = args.getInt(2);
-//            mLivePusher.setVideoQuality(quality, adjustBitrate, adjustResolution);
-      mTXLivePusher.setVideoQuality(quality, true, true);
-    } else if (action.equals("setBeautyFilterDepth")) {
-      if (mTXLivePusher == null) return false;
-      final int beautyDepth = args.getInt(0);
-      final int whiteningDepth = args.getInt(1);
-      mTXLivePusher.setBeautyFilter(1, beautyDepth, whiteningDepth, 5);
-    } else if (action.equals("setExposureCompensation")) {
-      // TODO: 尚未测试
-      if (mTXLivePusher == null) return false;
-      final float depth = (float) args.getDouble(0);
-      mTXLivePusher.setExposureCompensation(depth);
-    } else if (action.equals("setFilter")) {
-      alert("尚未实现");
-    } else if (action.equals("switchCamera")) {
-      if (mTXLivePusher == null) return false;
-      mTXLivePusher.switchCamera();
-    } else if (action.equals("toggleTorch")) {
-      // TODO: 尚未测试
-      if (mTXLivePusher == null) return false;
-      final boolean enabled = args.getBoolean(0);
-      mTXLivePusher.turnOnFlashLight(enabled);
-    } else if (action.equals("setFocusPosition")) {
-      alert("尚未实现");
-    } else if (action.equals("setWaterMark")) {
-      alert("尚未实现");
-    } else if (action.equals("setPauseImage")) {
-      alert("尚未实现");
-    } else if (action.equals("resize")) {
-      alert("尚未实现");
-    } else if (action.equals("pause")) {
-      alert("尚未实现");
-    } else if (action.equals("resume")) {
-      alert("尚未实现");
-    } else if (action.equals("setRenderMode")) {
-      alert("尚未实现");
-    } else if (action.equals("setRenderRotation")) {
-      alert("尚未实现");
-    } else if (action.equals("enableHWAcceleration")) {
-      alert("尚未实现");
-    } else if (action.equals("startRecord")) {
-//            return startRecord(callbackContext);
-    } else if (action.equals("stopRecord")) {
-//            return stopRecord(callbackContext);
-    } else if (action.equals("fixMinFontSize")) {
-//            return stopRecord(callbackContext);
-      return fixMinFontSize(callbackContext);
-    }
-
-    callbackContext.error("Undefined action: " + action);
-    return false;
-
-  }
-
-  @Override
-  public void onActivityResult(int requestCode, int resultCode, Intent intent) {
-    String statusCode;
-    switch (requestCode) {
-      case 990:  // demoPush
-        if (resultCode == 1) {
-          statusCode = "success";
-          callbackContext.success(statusCode);
-        }
-        break;
-      default:
-        break;
-    }
-  }
 
   /**
    * 在当前 Activity 底部 UI 层注册一个 TXCloudVideoView 以供直播渲染
@@ -275,7 +939,7 @@ public class TencentMLVB extends CordovaPlugin {
   private void prepareVideoView() {
     if (videoView != null) return;
     // 通过 layout 文件插入 videoView
-    LayoutInflater layoutInflater = LayoutInflater.from(activity);
+    LayoutInflater layoutInflater = LayoutInflater.from(this.cordova.getActivity());
     videoView = (TXCloudVideoView) layoutInflater.inflate(_R("layout", "layout_video"), null);
     // 设置 webView 透明
     videoView.setLayoutParams(new FrameLayout.LayoutParams(
@@ -311,56 +975,33 @@ public class TencentMLVB extends CordovaPlugin {
    * @param callbackContext
    * @return
    */
-  private boolean getVersion(final CallbackContext callbackContext) {
-    int[] sdkver = new int[]{6, 7};
-    if (sdkver != null && sdkver.length > 0) {
-      String ver = "" + sdkver[0];
-      for (int i = 1; i < sdkver.length; ++i) {
-        ver += "." + sdkver[i];
-      }
-      callbackContext.success(ver);
-      return true;
-    }
-    callbackContext.error("Cannot get rtmp sdk version.");
-    return false;
-  }
-
-  /**
-   * 设置最小字号
-   *
-   * @param callbackContext
-   * @return
-   */
-  private boolean fixMinFontSize(final CallbackContext callbackContext) {
-    try {
-      settings = ((WebView) cordovaWebView.getEngine().getView()).getSettings();
-      settings.setMinimumFontSize(1);
-      settings.setMinimumLogicalFontSize(1);
-    } catch (Exception error) {
-      callbackContext.error("10003");
-      return false;
-    }
+  public boolean getVersion(final CallbackContext callbackContext) {
+    String sdkver = TXLiveBase.getSDKVersionStr();
+    callbackContext.success(sdkver);
     return true;
   }
 
+
+
   private String createPushUrl(String userId) {
-    String pushDomainKey = MLVBCommonDef.TCGlobalConfig.DOMAIN_KEY;
+    String pushDomainKey = MLVBCommonDef.TCGlobalConfig.PUSH_DOMAIN_KEY;
     String roomID;
-    if (userId != null && userId.isEmpty()) {
+    if (userId == null || userId.isEmpty()) {
       roomID = "RoomDefault";
     } else {
       roomID = userId;
     }
-    String pushURL = "https://144660.livepush.myqcloud.com/live/" + roomID + "?";
+    String pushURL = "rtmp://" + MLVBCommonDef.TCGlobalConfig.PUSH_DOMAIN_URL + "/" + MLVBCommonDef.TCGlobalConfig.APP_NAME + "/" + roomID + "?";
 
-    long time = System.currentTimeMillis() / 1000;
-    String timeHex = String.format("%x", time);
+    long time = System.currentTimeMillis() / 1000 + MLVBCommonDef.TCGlobalConfig.EXPIRETIME;
+    time = 0x612DD29C;
+    String timeHex = String.format("%x", time).toUpperCase();
     String sig = TCUtils.md5(String.format("%s%s%s", pushDomainKey, roomID, timeHex));
     pushURL += String.format("txSecret=%s&txTime=%s", sig, timeHex);
     return pushURL;
   }
 
-  private boolean startPush(final CallbackContext callbackContext) {
+  public boolean startPush(final CallbackContext callbackContext) {
     String url = this.createPushUrl(null);
     MLVBCommonDef.IMLVBLiveRoomListener.CreateRoomCallback callback = new MLVBCommonDef.IMLVBLiveRoomListener.CreateRoomCallback() {
       @Override
@@ -397,19 +1038,47 @@ public class TencentMLVB extends CordovaPlugin {
     });
   }
 
+  protected void initLivePusher(boolean frontCamera) {
+    if (mTXLivePusher == null) {
+      mTXLivePusher = new TXLivePusher(this.cordova.getActivity().getApplicationContext());
+    }
+    TXLivePushConfig config = new TXLivePushConfig();
+    config.setFrontCamera(frontCamera);
+    config.enableScreenCaptureAutoRotate(true);// 是否开启屏幕自适应
+    config.setPauseFlag(TXLiveConstants.PAUSE_FLAG_PAUSE_VIDEO | TXLiveConstants.PAUSE_FLAG_PAUSE_AUDIO);
+    mTXLivePusher.setConfig(config);
+    mTXLivePusher.setBeautyFilter(TXLiveConstants.BEAUTY_STYLE_SMOOTH, 5, 3, 2);
+    mTXLivePushListener = new TXLivePushListenerImpl();
+    mTXLivePusher.setPushListener(mTXLivePushListener);
+  }
+
+  protected void unInitLivePusher() {
+    if (mTXLivePusher != null) {
+      mSelfPushUrl = "";
+      mTXLivePushListener = null;
+      mTXLivePusher.setPushListener(null);
+      mTXLivePusher.stopCameraPreview(true);
+      mTXLivePusher.stopPusher();
+      mTXLivePusher = null;
+    }
+  }
+
   protected boolean startPush(final String url, final int videoQuality, final StandardCallback callback){
     if (mTXLivePusher != null) {
-      callbackContext.error("10002");
+      if (callbackContext != null) {
+        callbackContext.error("10002");
+      }
       return false;
     }
+    Activity activity = this.cordova.getActivity();
     //在主线程开启推流
-    Handler handler = new Handler(context.getApplicationContext().getMainLooper());
+    Handler handler = new Handler(activity.getApplicationContext().getMainLooper());
     handler.post(new Runnable() {
       @Override
       public void run() {
         prepareVideoView();
         // 开始推流
-        mTXLivePusher = new TXLivePusher(activity);
+        mTXLivePusher = new TXLivePusher(cordova.getActivity().getApplicationContext());
         TXLivePushConfig mLivePushConfig = new TXLivePushConfig();
         mLivePushConfig.setFrontCamera(true);
         mLivePushConfig.enableScreenCaptureAutoRotate(true);// 是否开启屏幕自适应
@@ -426,6 +1095,7 @@ public class TencentMLVB extends CordovaPlugin {
             String msg = "[LiveRoom] 推流失败[license 校验失败]";
             TXCLog.e(TAG, msg);
             if (callback != null) callback.onError(MLVBCommonDef.LiveRoomErrorCode.ERROR_LICENSE_INVALID, msg);
+            stopPush(callbackContext);
           }
           // 将视频绑定到 videoView
           mTXLivePusher.startCameraPreview(videoView);
@@ -440,42 +1110,19 @@ public class TencentMLVB extends CordovaPlugin {
   }
 
   /**
-   * 开始推流，并且在垫底的 videoView 显示视频
-   * 会在当前对象上下文注册一个 TXLivePusher
-   *
-   * @param url             推流URL
-   * @param callbackContext
-   * @return
-   */
-  private boolean startPush(final String url, final CallbackContext callbackContext) {
-
-    // 准备 videoView，没有的话生成
-    activity.runOnUiThread(new Runnable() {
-      public void run() {
-        prepareVideoView();
-        // 开始推流
-        mTXLivePusher = new TXLivePusher(activity);
-        TXLivePushConfig mLivePushConfig = new TXLivePushConfig();
-        mTXLivePusher.setConfig(mLivePushConfig);
-        mTXLivePusher.startPusher(url);
-        // 将视频绑定到 videoView
-        mTXLivePusher.startCameraPreview(videoView);
-      }
-    });
-    return true;
-  }
-
-  /**
    * 停止推流，并且注销 mLivePusher 对象
    *
    * @param callbackContext
    * @return
    */
-  private boolean stopPush(final CallbackContext callbackContext) {
+  public boolean stopPush(final CallbackContext callbackContext) {
     if (mTXLivePusher == null) {
-      callbackContext.error("10003");
+      if (callbackContext != null) {
+        callbackContext.error("10003");
+      }
       return false;
     }
+    Activity activity = cordova.getActivity();
     activity.runOnUiThread(new Runnable() {
       public void run() {
         // 停止摄像头预览
@@ -502,11 +1149,12 @@ public class TencentMLVB extends CordovaPlugin {
    * @param callbackContext
    * @return
    */
-  private boolean startPlay(final String url, final int playType, final CallbackContext callbackContext) {
+  public boolean startPlay(final String url, final int playType, final CallbackContext callbackContext) {
     if (mTXLivePlayer != null) {
       callbackContext.error("10004");
       return false;
     }
+    Activity activity = cordova.getActivity();
     // 准备 videoView，没有的话生成
     activity.runOnUiThread(new Runnable() {
       public void run() {
@@ -528,11 +1176,12 @@ public class TencentMLVB extends CordovaPlugin {
    * @param callbackContext
    * @return
    */
-  private boolean stopPlay(final CallbackContext callbackContext) {
+  public boolean stopPlay(final CallbackContext callbackContext) {
     if (mTXLivePlayer == null) {
       callbackContext.error("10005");
       return false;
     }
+    Activity activity = cordova.getActivity();
     activity.runOnUiThread(new Runnable() {
       public void run() {
         // 停止播放
@@ -546,53 +1195,19 @@ public class TencentMLVB extends CordovaPlugin {
     return true;
   }
 
-  /**
-   * check application's permissions
-   */
-  public boolean hasPermisssion() {
-    for (String p : permissions) {
-      if (!PermissionHelper.hasPermission(this, p)) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  /**
-   * We override this so that we can access the permissions variable, which no longer exists in
-   * the parent class, since we can't initialize it reliably in the constructor!
-   *
-   * @param requestCode The code to get request action
-   */
-  public void requestPermissions(int requestCode) {
-    PermissionHelper.requestPermissions(this, requestCode, permissions);
-  }
-
-  public void alert(String msg, String title) {
-    new AlertDialog.Builder(this.activity)
-      .setTitle(title)
-      .setMessage(msg)//设置显示的内容
-      .setPositiveButton("确定", new DialogInterface.OnClickListener() {//添加确定按钮
-        @Override
-        public void onClick(DialogInterface dialog, int which) {//确定按钮的响应事件
-          // TODO Auto-generated method stub
-//                        finish();
-        }
-      }).show();//在按键响应事件中显示此对话框
-  }
-
-  public void alert(String msg) {
-    alert(msg, "系统提示");
-  }
-
   public String jsonEncode(Object obj) {
     Gson gson = new Gson();
     return gson.toJson(obj);
   }
 
   public int _R(String defType, String name) {
+    Activity activity = cordova.getActivity();
     return activity.getApplication().getResources().getIdentifier(
       name, defType, activity.getApplication().getPackageName());
+  }
+
+  public void setVideoQuality(int quality, boolean adjustBitrate, boolean adjustResolution) {
+    this.mTXLivePusher.setVideoQuality(quality, adjustBitrate, adjustResolution);
   }
 
   //    public static void printViewHierarchy(ViewGroup vg, String prefix) {
