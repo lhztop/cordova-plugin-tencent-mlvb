@@ -128,7 +128,7 @@ public class TencentMLVB extends CordovaPlugin {
         return mlvbInstance.getVersion(callbackContext);
       case "startPush": {
         final String url = args.getString(0);
-        return mlvbInstance.startPush(callbackContext);
+        return mlvbInstance.startPush(url, callbackContext);
       }
       case "stopPush":
         return mlvbInstance.stopPush(callbackContext);
@@ -138,7 +138,7 @@ public class TencentMLVB extends CordovaPlugin {
       case "startPlay": {
         final String url = args.getString(0);
         final int playType = args.getInt(1);
-        return mlvbInstance.startPlay(callbackContext);
+        return mlvbInstance.startPlay(url, callbackContext);
       }
       case "stopPlay":
         return mlvbInstance.stopPlay(callbackContext);
@@ -299,6 +299,7 @@ public class TencentMLVB extends CordovaPlugin {
 
 class MLVBRoomImpl {
   private static final String TAG = MLVBRoomImpl.class.getName();
+  private static final String DEFAULT_ROOM = "camera_1";
   private static MLVBRoomImpl instance;
   public V2TXLivePusher mLivePusher;                //直播推流
   private V2TXLivePlayer mLivePlayer;               //直播拉流的视频播放器
@@ -469,8 +470,8 @@ class MLVBRoomImpl {
 //    mTXLivePusher.setPushListener(mTXLivePushListener);
   }
 
-  public boolean startPlay(final CallbackContext callbackContext) {
-    String playURL = this.createPullUrl(null);
+  public boolean startPlay(String userid, final CallbackContext callbackContext) {
+    String playURL = this.createPullUrl(userid);
 
     Activity activity = this.cordova.getActivity();
     activity.runOnUiThread(new Runnable() {
@@ -594,7 +595,7 @@ class MLVBRoomImpl {
     String pullDomainKey = MLVBCommonDef.TCGlobalConfig.PULL_DOMAIN_KEY;
     String roomID;
     if (userId == null || userId.isEmpty()) {
-      roomID = "RoomDefault";
+      roomID = DEFAULT_ROOM;
     } else {
       roomID = userId;
     }
@@ -611,7 +612,7 @@ class MLVBRoomImpl {
     String pushDomainKey = MLVBCommonDef.TCGlobalConfig.PUSH_DOMAIN_KEY;
     String roomID;
     if (userId == null || userId.isEmpty()) {
-      roomID = "RoomDefault";
+      roomID = DEFAULT_ROOM;
     } else {
       roomID = userId;
     }
@@ -625,9 +626,9 @@ class MLVBRoomImpl {
     return pushURL;
   }
 
-  public boolean startPush(final CallbackContext callbackContext) {
+  public boolean startPush(String userid, final CallbackContext callbackContext) {
     int resultCode = MLVBCommonDef.Constants.PLAY_STATUS_SUCCESS;
-    String tRTMPURL = this.createPushUrl(null);
+    String tRTMPURL = this.createPushUrl(userid);
     if (TextUtils.isEmpty(tRTMPURL) || (!tRTMPURL.trim().toLowerCase().startsWith("rtmp://"))) {
       resultCode = MLVBCommonDef.Constants.PLAY_STATUS_INVALID_URL;
     } else {
