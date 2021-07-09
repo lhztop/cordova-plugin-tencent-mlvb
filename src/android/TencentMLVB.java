@@ -471,7 +471,7 @@ class MLVBRoomImpl {
   }
 
   public boolean startPlay(String userid, final CallbackContext callbackContext) {
-    String playURL = this.createPullUrl(userid);
+    String playURL = userid;
 
     Activity activity = this.cordova.getActivity();
     activity.runOnUiThread(new Runnable() {
@@ -628,7 +628,8 @@ class MLVBRoomImpl {
 
   public boolean startPush(String userid, final CallbackContext callbackContext) {
     int resultCode = MLVBCommonDef.Constants.PLAY_STATUS_SUCCESS;
-    String tRTMPURL = this.createPushUrl(userid);
+    // String tRTMPURL = this.createPushUrl(userid);
+    String tRTMPURL = userid;
     if (TextUtils.isEmpty(tRTMPURL) || (!tRTMPURL.trim().toLowerCase().startsWith("rtmp://"))) {
       resultCode = MLVBCommonDef.Constants.PLAY_STATUS_INVALID_URL;
     } else {
