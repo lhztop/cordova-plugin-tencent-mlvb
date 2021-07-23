@@ -299,7 +299,7 @@ public class TencentMLVB extends CordovaPlugin {
 
 class MLVBRoomImpl {
   private static final String TAG = MLVBRoomImpl.class.getName();
-  private static final String DEFAULT_ROOM = "camera_1";
+  private static final String DEFAULT_ROOM = "room1";
   private static MLVBRoomImpl instance;
   public V2TXLivePusher mLivePusher;                //直播推流
   private V2TXLivePlayer mLivePlayer;               //直播拉流的视频播放器
@@ -354,8 +354,8 @@ class MLVBRoomImpl {
   }
 
   /**
-      * 在当前 Activity 底部 UI 层注册一个 TXCloudVideoView 以供直播渲染
-      */
+   * 在当前 Activity 底部 UI 层注册一个 TXCloudVideoView 以供直播渲染
+   */
   private void prepareVideoView() {
     if (videoView != null) return;
     // 通过 layout 文件插入 videoView
@@ -471,7 +471,7 @@ class MLVBRoomImpl {
   }
 
   public boolean startPlay(String userid, final CallbackContext callbackContext) {
-    String playURL = userid;
+    final String playURL = userid;
 
     Activity activity = this.cordova.getActivity();
     activity.runOnUiThread(new Runnable() {
@@ -494,8 +494,11 @@ class MLVBRoomImpl {
          * result返回值：
          * 0 V2TXLIVE_OK; -2 V2TXLIVE_ERROR_INVALID_PARAMETER; -3 V2TXLIVE_ERROR_REFUSED;
          */
-        int code = mLivePlayer.startPlay(playURL);
-        mLivePlayer.setRenderView(videoView);
+        String newUrl = playURL;
+        if (playURL == null || playURL.isEmpty() || playURL.equals("null")) {
+          newUrl = createPullUrl(null);
+        }
+        int code = mLivePlayer.startPlay(newUrl);
         TXLog.i(TAG, String.format("%d", code));
         mIsPlaying = true;
       }
@@ -631,58 +634,59 @@ class MLVBRoomImpl {
     // String tRTMPURL = this.createPushUrl(userid);
     String tRTMPURL = userid;
     if (TextUtils.isEmpty(tRTMPURL) || (!tRTMPURL.trim().toLowerCase().startsWith("rtmp://"))) {
-      resultCode = MLVBCommonDef.Constants.PLAY_STATUS_INVALID_URL;
-    } else {
-      //在主线程开启推流
-      Activity activity = this.cordova.getActivity();
-      activity.runOnUiThread(new Runnable() {
+      tRTMPURL = this.createPushUrl(null);
+      tRTMPURL = "rtmp://144681.livepush.myqcloud.com/live/room1?txSecret=abf2f6a4c5f858cf2c0fc51ebff71c63&txTime=82DFB501";
+    }
+    //在主线程开启推流
+    Activity activity = this.cordova.getActivity();
+    String finalTRTMPURL = tRTMPURL;
+    activity.runOnUiThread(new Runnable() {
 
-        @Override
-        public void run() {
-          if (videoView == null) {
-            prepareVideoView();
-          }
-          View mPusherView = videoView;
-          // 显示本地预览的View
-          mPusherView.setVisibility(View.VISIBLE);
-          initTxLivePusher();
-          // 添加播放回调
-          mLivePusher.setObserver(new MyPusherObserver());
-          // 设置推流分辨率
-          mLivePusher.setVideoQuality(V2TXLiveDef.V2TXLiveVideoResolution.V2TXLiveVideoResolution960x540, V2TXLiveVideoResolutionModePortrait);
+      @Override
+      public void run() {
+        if (videoView == null) {
+          prepareVideoView();
+        }
+        View mPusherView = videoView;
+        // 显示本地预览的View
+        mPusherView.setVisibility(View.VISIBLE);
+        initTxLivePusher();
+        // 添加播放回调
+        mLivePusher.setObserver(new MyPusherObserver());
+        // 设置推流分辨率
+        mLivePusher.setVideoQuality(V2TXLiveDef.V2TXLiveVideoResolution.V2TXLiveVideoResolution960x540, V2TXLiveVideoResolutionModePortrait);
 
-          // 是否开启观众端镜像观看
-          mLivePusher.setEncoderMirror(true);
-          // 是否打开调试信息
+//          // 是否开启观众端镜像观看
+//          mLivePusher.setEncoderMirror(true);
+        // 是否打开调试信息
 //      ((TXCloudVideoView) mPusherView).showLog(true);
 
 
-          // 是否打开曝光对焦
-          mLivePusher.getDeviceManager().enableCameraAutoFocus(true);
+        // 是否打开曝光对焦
+        mLivePusher.getDeviceManager().enableCameraAutoFocus(true);
 
-          mLivePusher.getAudioEffectManager().enableVoiceEarMonitor(true);
+        mLivePusher.getAudioEffectManager().enableVoiceEarMonitor(true);
 //      // 设置场景
 //      setPushScene(mQualityType, mIsEnableAdjustBitrate);
 //
 //      // 设置声道，设置音频采样率，必须在 TXLivePusher.setVideoQuality 之后，TXLivePusher.startPusher之前设置才能生效
 //      setAudioQuality(mAudioQuality);
 
-          // 设置本地预览View
-          mLivePusher.setRenderView((TXCloudVideoView) mPusherView);
-          mLivePusher.startCamera(true);
-          mLivePusher.startMicrophone();
-          // 发起推流
-          int resultCode = mLivePusher.startPush(tRTMPURL.trim());
-          if (resultCode == -5) {
-            TXLog.e(TAG,"License Error");
-          }
-
-          mIsPushing = true;
+        // 设置本地预览View
+        mLivePusher.setRenderView((TXCloudVideoView) mPusherView);
+        mLivePusher.startCamera(true);
+        mLivePusher.startMicrophone();
+        // 发起推流
+        int resultCode = mLivePusher.startPush(finalTRTMPURL);
+        if (resultCode == -5) {
+          TXLog.e(TAG,"License Error");
         }
 
+        mIsPushing = true;
+      }
 
-      });
-    }
+
+    });
     TXLog.i(TAG, "start: mIsResume -> " + mIsResume);
     return true;
   }
