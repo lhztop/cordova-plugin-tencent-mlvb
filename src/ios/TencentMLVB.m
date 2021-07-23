@@ -1,6 +1,9 @@
 #import "TencentMLVB.h"
-
+#import "TXLiveBase.h"
+#import "TXLivePushConfig.h"
+#import "TXLivePlayConfig.h"
 #import "MainViewController.h"
+#import "TXDeviceManager.h"
 
 @implementation MainViewController(CDVViewController)
 - (void) viewDidLoad {
@@ -27,9 +30,14 @@
 //    [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
 //}
 
++ (void)initialize
+{
+    [TXLiveBase setLicenceURL:@"https://license.vod2.myqcloud.com/license/v1/8612e157f4dc57d7255dd8623c865e0d/TXLiveSDK.licence" key:@"5b80e37e9404b5225e2c05bfa4b68f69"];
+}
+
 - (void) prepareVideoView {
     if (self.videoView) return;
-    self.videoView = [[UIView alloc] initWithFrame:[[UIScreen mainScreen] applicationFrame]];
+    self.videoView = [[UIView alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
     [self.webView.superview addSubview:self.videoView];
     [self.webView.superview bringSubviewToFront:self.webView];
 }
@@ -43,7 +51,7 @@
 }
 
 - (void) getVersion:(CDVInvokedUrlCommand*)command {
-    NSString* version = [[TXLivePush getSDKVersion] componentsJoinedByString:@"."];
+    NSString* version = [TXLiveBase getSDKVersionStr];
     CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:version];
     [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
 }
@@ -51,18 +59,21 @@
 - (void) startPush:(CDVInvokedUrlCommand*)command {
     if (self.livePusher) return;
     NSString* url = [command.arguments objectAtIndex:0];
+    if (url == nil || url == [NSNull null]) {
+        url = @"rtmp://144681.livepush.myqcloud.com/live/room1?txSecret=abf2f6a4c5f858cf2c0fc51ebff71c63&txTime=82DFB501";
+    }
     [self prepareVideoView];
     TXLivePushConfig* _config = [[TXLivePushConfig alloc] init];
-    self.livePusher = [[TXLivePush alloc] initWithConfig: _config];
-    [self.livePusher startPreview:videoView];
+    self.livePusher = [[V2TXLivePusher alloc] initWithLiveMode:V2TXLiveMode_RTMP];
+    [self.livePusher setRenderView:videoView];
+    [self.livePusher startCamera:YES];
     [self.livePusher startPush:url];
 }
 
 - (void) stopPush:(CDVInvokedUrlCommand*)command {
     if (!self.livePusher) return;
-    [self.livePusher stopPreview];
+    [self.livePusher stopCamera];
     [self.livePusher stopPush];
-    self.livePusher.delegate = nil;
     self.livePusher = nil;
     [self destroyVideoView];
 }
@@ -75,15 +86,18 @@
 
     [self prepareVideoView];
 
-    self.livePlayer = [[TXLivePlayer alloc] init];
-    [self.livePlayer setupVideoWidget:CGRectMake(0, 0, 0, 0) containView:videoView insertIndex:0];
-    [self.livePlayer startPlay:url type:PLAY_TYPE_LIVE_FLV];
+    self.livePlayer = [[V2TXLivePlayer alloc] init];
+    [self.livePlayer setRenderView:videoView];
+    [self.livePlayer setRenderFillMode:V2TXLiveFillModeFit];
+    if (url == nil || url == [NSNull null]) {
+        url = @"rtmp://livetest2.homei-life.com/live/room1?txSecret=c627caf3b969c1dbd6929c95a71998b2&txTime=80FA8CCC";
+    }
+    [self.livePlayer startPlay:url];
 }
 
 - (void) stopPlay:(CDVInvokedUrlCommand*)command {
     if (!self.livePlayer) return;
     [self.livePlayer stopPlay];
-    [self.livePlayer removeVideoWidget];
     self.livePlayer = nil;
     [self destroyVideoView];
 }
@@ -102,7 +116,9 @@
 
 - (void) switchCamera:(CDVInvokedUrlCommand*)command {
     if (!self.livePusher) return;
-    [self.livePusher switchCamera];
+    TXDeviceManager * dmgr = [self.livePusher getDeviceManager];
+    BOOL isFront = [dmgr isFrontCamera];
+    [[self.livePusher getDeviceManager] switchCamera: !isFront];
 }
 
 - (void) toggleTorch:(CDVInvokedUrlCommand*)command {

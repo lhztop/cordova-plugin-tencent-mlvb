@@ -1,12 +1,20 @@
+/*
+ * @Author: your name
+ * @Date: 2021-07-10 07:57:46
+ * @LastEditTime: 2021-07-23 13:39:14
+ * @LastEditors: your name
+ * @Description: In User Settings Edit
+ * @FilePath: /box_dev/Users/hy/proj/dev/javascript/cordova-plugin-tencent-mlvb/src/ios/TencentMLVB.h
+ */
 #import <Cordova/CDV.h>
-#import "TXRTMPSDK/TXLivePush.h"
-#import "TXRTMPSDK/TXLivePlayer.h"
+#import "V2TXLivePusher.h"
+#import "V2TXLivePlayer.h"
 
 @interface TencentMLVB : CDVPlugin
 
 @property UIView* videoView;
-@property TXLivePush* livePusher;
-@property TXLivePlayer* livePlayer;
+@property V2TXLivePusher* livePusher;
+@property V2TXLivePlayer* livePlayer;
 
 - (void) getVersion:(CDVInvokedUrlCommand*)command;
 - (void) prepareVideoView;

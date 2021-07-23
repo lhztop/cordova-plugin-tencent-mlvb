@@ -82,10 +82,11 @@
         <source-file src="src/ios/TencentMLVB.m" />
 
         <!-- 腾讯直播 SDK -->
-        <framework src="src/ios/TXRTMPSDK.framework" custom="true"/>
+        <!-- <framework src="src/ios/TXRTMPSDK.framework" custom="true"/> -->
 
         <!-- 依赖库 -->
         <framework src="VideoToolbox.framework" />
+        <framework type="podspec" src="TXLiteAVSDK_Smart" spec="~>8.6"/>
         <framework src="SystemConfiguration.framework" />
         <framework src="CoreTelephony.framework" />
         <framework src="AVFoundation.framework" />
