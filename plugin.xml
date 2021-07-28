@@ -88,6 +88,7 @@
         <framework src="VideoToolbox.framework" />
         <framework type="podspec" src="TXLiteAVSDK_Smart" spec="~>8.6"/>
         <framework src="SystemConfiguration.framework" />
+        <framework src="OpenAL.framework"/>
         <framework src="CoreTelephony.framework" />
         <framework src="AVFoundation.framework" />
         <framework src="CoreMedia.framework" />
@@ -96,6 +97,7 @@
         <framework src="libz.tbd" />
         <framework src="libiconv.tbd" />
         <framework src="libresolv.tbd" />
+        <framework src="libsqlite3.tbd" />
 
         <!-- 权限声明 -->
         <config-file target="*-Info.plist" parent="NSCameraUsageDescription">
