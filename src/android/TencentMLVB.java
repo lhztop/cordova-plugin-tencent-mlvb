@@ -453,7 +453,12 @@ class MLVBRoomImpl {
 
   private void initTxLivePlayer() {
     mLivePlayer = new V2TXLivePlayerImpl(this.cordova.getActivity());
-    TXLivePlayConfig config = new TXLivePlayConfig();
+//    //自动模式
+//    mLivePlayer.setCacheParams(1.0f, 5.0f);
+    //极速模式
+    mLivePlayer.setCacheParams(1.0f, 1.0f);
+//    //流畅模式
+//    mLivePlayer.setCacheParams(5.0f, 5.0f);
   }
 
   private void initTxLivePusherV1() {
