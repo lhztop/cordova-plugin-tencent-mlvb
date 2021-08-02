@@ -74,6 +74,7 @@ import static com.tencent.live2.V2TXLiveDef.V2TXLiveVideoResolutionMode.V2TXLive
 
 public class TencentMLVB extends CordovaPlugin {
   private CallbackContext callbackContext;
+  private final static String TAG = "TencentMLVB";
   private Activity activity;
   private final String[] permissions = {
     Manifest.permission.INTERNET,
@@ -106,6 +107,15 @@ public class TencentMLVB extends CordovaPlugin {
     MLVBRoomImpl.getInstance(cordova, webView);
   }
 
+  public void onRequestPermissionResult(int requestCode, String[] permissions,
+                                        int[] grantResults) throws JSONException {
+    //Log.d(TAG, "---> onRequestPermissionResult");
+
+    synchronized (TAG) {
+      TAG.notify();
+    }
+  }
+
   /**
    * Executes the request and returns PluginResult.
    *
@@ -118,8 +128,21 @@ public class TencentMLVB extends CordovaPlugin {
   public boolean execute(String action, JSONArray args, final CallbackContext callbackContext) throws JSONException {
 
     if (!hasPermisssion()) {
-      requestPermissions(0);
+      synchronized (TAG) {
+        this.requestPermissions(0);
+        try {
+          TAG.wait();
+        } catch (InterruptedException e) {
+          e.printStackTrace();
+        }
+      }
+
+      if (!hasPermisssion()) {
+        callbackContext.error("请允许权限申请");
+        return false;
+      }
     }
+
 
     this.callbackContext = callbackContext;
     MLVBRoomImpl mlvbInstance = MLVBRoomImpl.getInstance();
