@@ -3,6 +3,8 @@ package com.qcloud.cordova.mlvb;
 import android.annotation.SuppressLint;
 import android.app.Service;
 import android.content.Context;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.os.Build;
@@ -106,6 +108,21 @@ public class TencentMLVB extends CordovaPlugin {
     this.activity = cordova.getActivity();
     this.cordovaWebView = webView;
     MLVBRoomImplV1.getInstance(cordova, webView);
+    ApplicationInfo ai = null;
+    try {
+      ai = cordova.getActivity().getPackageManager().getApplicationInfo(cordova.getActivity().getPackageName(), PackageManager.GET_META_DATA);
+    } catch (PackageManager.NameNotFoundException e) {
+      e.printStackTrace();
+    }
+    Bundle bundle = ai.metaData;
+    if (bundle.containsKey("mlvb.license.url")) {
+      MLVBCommonDef.TCGlobalConfig.LICENCE_URL = bundle.getString("mlvb.license.url");
+    }
+
+    if (bundle.containsKey("mlvb.license.key")) {
+      MLVBCommonDef.TCGlobalConfig.LICENCE_KEY = bundle.getString("mlvb.license.key");
+    }
+
   }
 
   public void onRequestPermissionResult(int requestCode, String[] permissions,
