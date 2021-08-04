@@ -110,7 +110,7 @@
             <string>直播需要访问您的麦克风</string>
         </config-file>
         <config-file target="*-Info.plist" parent="MlvbLicenseUrl">
-            <string>$MLVB_LICENSE_Url</string>
+            <string>$MLVB_LICENSE_URL</string>
         </config-file>
         <config-file target="*-Info.plist" parent="MlvbLicenseKey">
             <string>$MLVB_LICENSE_KEY</string>
