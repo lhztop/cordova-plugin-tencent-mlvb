@@ -993,7 +993,7 @@ class MLVBRoomImplV1 extends MLVBRoomImpl {
     // 设置 webView 透明
     webView.setBackgroundColor(Color.TRANSPARENT);
     // 关闭 webView 的硬件加速（否则不能透明）
-    webView.setLayerType(WebView.LAYER_TYPE_SOFTWARE, null);
+//    webView.setLayerType(WebView.LAYER_TYPE_SOFTWARE, null);
     // 将 webView 提到顶层
     webView.bringToFront();
   }
@@ -1262,7 +1262,12 @@ class MLVBRoomImplV1 extends MLVBRoomImpl {
       return true;
     }
     if (mLivePlayer != null) {
-      mLivePlayer.stopPlay(true);
+      this.cordova.getActivity().runOnUiThread(new Runnable() {
+        @Override
+        public void run() {
+          mLivePlayer.stopPlay(true);
+        }
+      });
     }
     mIsPlaying = false;
     this.detachVideoView();
@@ -1495,10 +1500,18 @@ class MLVBRoomImplV1 extends MLVBRoomImpl {
     if (!mIsPushing) {
       return true;
     }
-    // 停止本地预览
-    mLivePusher.stopCameraPreview(true);
-    // 停止推流
-    mLivePusher.stopPusher();
+    if (this.mLivePusher != null) {
+      this.cordova.getActivity().runOnUiThread(new Runnable() {
+        @Override
+        public void run() {
+          // 停止本地预览
+          mLivePusher.stopCameraPreview(true);
+          // 停止推流
+          mLivePusher.stopPusher();
+        }
+      });
+    }
+
     // 隐藏本地预览的View
     this.detachVideoView();
     mIsPushing = false;

@@ -156,8 +156,8 @@ public class MLVBCommonDef {
      * <p>
      * 获取License，请参考官网指引 https://cloud.tencent.com/document/product/454/34750
      */
-    public static final String LICENCE_URL = "https://license.vod2.myqcloud.com/license/v1/8612e157f4dc57d7255dd8623c865e0d/TXLiveSDK.licence";
-    public static final String LICENCE_KEY = "5b80e37e9404b5225e2c05bfa4b68f69";
+    public static String LICENCE_URL = "https://license.vod2.myqcloud.com/license/v1/8612e157f4dc57d7255dd8623c865e0d/TXLiveSDK.licence";
+    public static String LICENCE_KEY = "5b80e37e9404b5225e2c05bfa4b68f69";
 
 
     /**
