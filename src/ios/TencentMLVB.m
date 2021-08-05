@@ -37,18 +37,22 @@
 }
 
 - (void) prepareVideoView {
-    if (self.videoView) return;
-    self.videoView = [[UIView alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
+    if (!self.videoView) {
+        self.videoView = [[UIView alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
+    }
+    self.videoView.hidden = NO;
     [self.webView.superview addSubview:self.videoView];
+    self.webView.backgroundColor = [UIColor clearColor];
+    self.webView.opaque = NO;
     [self.webView.superview bringSubviewToFront:self.webView];
 }
 
-- (void) destroyVideoView {
+- (void) detachVideoView {
     if (!self.videoView) return;
+    self.videoView.hidden = YES;
     [self.videoView removeFromSuperview];
-    self.videoView = nil;
     // 把 webView 变回白色
-    // [self.webView setBackgroundColor:[UIColor whiteColor]];
+    [self.webView setBackgroundColor:[UIColor whiteColor]];
 }
 
 - (void) getVersion:(CDVInvokedUrlCommand*)command {
@@ -57,50 +61,97 @@
     [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
 }
 
+- (void)initLivePusher {
+    if (livePusher == nil) {
+        TXLivePushConfig *config = [[TXLivePushConfig alloc] init];
+        config.pauseImg = [UIImage imageNamed:@"pause_publish.jpg"];
+        config.pauseFps = 15;
+        config.pauseTime = 300;
+        
+        livePusher = [[TXLivePush alloc] initWithConfig:config];
+        livePusher.delegate = self;
+        [livePusher setVideoQuality:VIDEO_QUALITY_HIGH_DEFINITION adjustBitrate:NO adjustResolution:NO];
+        [livePusher setLogViewMargin:UIEdgeInsetsMake(120, 10, 60, 10)];
+        config.videoEncodeGop = 2;
+        [livePusher setConfig:config];
+    }
+}
+
 - (void) startPush:(CDVInvokedUrlCommand*)command {
     if (self.livePusher) return;
-    NSString* url = [command.arguments objectAtIndex:0];
-    if (url == nil || url == [NSNull null]) {
-        url = @"rtmp://144681.livepush.myqcloud.com/live/room1?txSecret=abf2f6a4c5f858cf2c0fc51ebff71c63&txTime=82DFB501";
+    dispatch_async(dispatch_get_main_queue(), ^{
+        NSString* url = [command.arguments objectAtIndex:0];
+        if (url == nil || url == [NSNull null]) {
+            url = @"rtmp://livepush.gwk001.com/live/room1?txSecret=19b2cdd333b00d0df3e863ae69c7a433&txTime=8308690A";
+        }
+        [self prepareVideoView];
+        [self initLivePusher];
+        [self.livePusher startPreview:self.videoView];
+        int ret = [self.livePusher startPush:url];
+        if (ret != 10000) {
+            NSLog(@"push error with ret %d", ret);
+        }
+    });
+}
+
+- (void) initTxLivePlayer
+{
+    if (self.livePlayer == nil) {
+        TXLivePlayConfig *playConfig = [[TXLivePlayConfig alloc] init];
+        playConfig.bAutoAdjustCacheTime = YES;
+        playConfig.minAutoAdjustCacheTime = 1.0f;
+        playConfig.maxAutoAdjustCacheTime = 1.0f;
+        self.livePlayer = [[TXLivePlayer alloc] init];
+        [self.livePlayer setupVideoWidget:CGRectZero containView:self.videoView insertIndex:0];
+        [self.livePlayer setConfig:playConfig];
+        [self.livePlayer setRenderMode:RENDER_MODE_FILL_EDGE];
+        
     }
-    [self prepareVideoView];
-    TXLivePushConfig* _config = [[TXLivePushConfig alloc] init];
-    self.livePusher = [[V2TXLivePusher alloc] initWithLiveMode:V2TXLiveMode_RTMP];
-    [self.livePusher setRenderView:videoView];
-    [self.livePusher startCamera:YES];
-    [self.livePusher startPush:url];
 }
 
 - (void) stopPush:(CDVInvokedUrlCommand*)command {
     if (!self.livePusher) return;
-    [self.livePusher stopCamera];
-    [self.livePusher stopPush];
-    self.livePusher = nil;
-    [self destroyVideoView];
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [self.livePusher stopPreview];
+        [self.livePusher stopPush];
+        self.livePusher = nil;
+        [self detachVideoView];
+    });
+}
+
+-(int)getPlayType:(NSString*)playUrl {
+    if ([playUrl hasPrefix:@"rtmp:"]) {
+        return  PLAY_TYPE_LIVE_RTMP;
+    }
+    else if (([playUrl hasPrefix:@"https:"] || [playUrl hasPrefix:@"http:"]) && ([playUrl rangeOfString:@".flv"].length > 0)) {
+        return PLAY_TYPE_LIVE_FLV;
+    }
+    else{
+        return PLAY_TYPE_LIVE_FLV;
+    }
 }
 
 - (void) startPlay:(CDVInvokedUrlCommand*)command {
     if (self.livePlayer) return;
-    NSString* url = [command.arguments objectAtIndex:0];
-//    TX_Enum_PlayType playUrlType = (TX_Enum_PlayType)[command.arguments objectAtIndex:1];
-//    NSInteger playUrlType = (NSInteger)[command.arguments objectAtIndex:1];
 
-    [self prepareVideoView];
-
-    self.livePlayer = [[V2TXLivePlayer alloc] init];
-    [self.livePlayer setRenderView:videoView];
-    [self.livePlayer setRenderFillMode:V2TXLiveFillModeFit];
-    if (url == nil || url == [NSNull null]) {
-        url = @"rtmp://livetest2.homei-life.com/live/room1?txSecret=c627caf3b969c1dbd6929c95a71998b2&txTime=80FA8CCC";
-    }
-    [self.livePlayer startPlay:url];
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [self prepareVideoView];
+        [self initTxLivePlayer];
+        NSString* url = [command.arguments objectAtIndex:0];
+        if (url == nil || url == [NSNull null]) {
+            url = @"https://live.gwk001.com/live/room1.flv?txSecret=5fceb0ac8b3f3bd43837ff36ca3de00c&txTime=830869F9";
+        }
+        [self.livePlayer startPlay:url type:[self getPlayType:url]];
+    });
 }
 
 - (void) stopPlay:(CDVInvokedUrlCommand*)command {
     if (!self.livePlayer) return;
-    [self.livePlayer stopPlay];
-    self.livePlayer = nil;
-    [self destroyVideoView];
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [self.livePlayer stopPlay];
+        self.livePlayer = nil;
+        [self detachVideoView];
+    });
 }
 
 - (void) setVideoQuality:(CDVInvokedUrlCommand*)command {
@@ -117,9 +168,7 @@
 
 - (void) switchCamera:(CDVInvokedUrlCommand*)command {
     if (!self.livePusher) return;
-    TXDeviceManager * dmgr = [self.livePusher getDeviceManager];
-    BOOL isFront = [dmgr isFrontCamera];
-    [[self.livePusher getDeviceManager] switchCamera: !isFront];
+    [self.livePusher switchCamera];
 }
 
 - (void) toggleTorch:(CDVInvokedUrlCommand*)command {
@@ -177,5 +226,56 @@
 - (void)  alert:(NSString*)message {
     [self alert:message title:@"系统消息"];
 }
+
+- (void)onPushEvent:(int)EvtID withParam:(NSDictionary *)param
+{
+    dispatch_async(dispatch_get_main_queue(), ^{
+        NSLog (@"PUSH EVENT: %d: %@", EvtID, param);
+        if (EvtID == PUSH_ERR_NET_DISCONNECT || EvtID == PUSH_ERR_INVALID_ADDRESS) {
+          //...
+        } else if (EvtID == PUSH_WARNING_NET_BUSY) {
+          NSLog(@"您当前的网络环境不佳，请尽快更换网络保证正常直播");
+        }
+      //...
+  });
+}
+
+- (void)onNetStatus:(NSDictionary *)param {
+    
+}
+
+- (void)onPlayEvent:(int)EvtID withParam:(NSDictionary *)param {
+    dispatch_async(dispatch_get_main_queue(), ^{
+        NSLog (@"PLAY EVENT: %d: %@", EvtID, param);
+        if (EvtID == PLAY_WARNING_RECONNECT || EvtID == PLAY_EVT_PLAY_END) {
+          //...
+        } else if (EvtID == PLAY_WARNING_SERVER_DISCONNECT) {
+          NSLog(@"您当前的网络环境不佳，请尽快更换网络保证正常直播");
+        }
+      //...
+  });
+}
+
+
+
+- (void)onScreenCapturePaused:(int)reason {
+    
+}
+
+
+- (void)onScreenCaptureResumed:(int)reason {
+    
+}
+
+
+- (void)onScreenCaptureStarted {
+    
+}
+
+
+- (void)onScreenCaptureStoped:(int)reason {
+    
+}
+
 
 @end
