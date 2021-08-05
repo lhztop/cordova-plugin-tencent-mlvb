@@ -46,6 +46,9 @@
 
             <uses-feature android:name="android.hardware.Camera" />
             <uses-feature android:name="android.hardware.camera.autofocus" />
+        </config-file>
+        
+        <config-file target="AndroidManifest.xml" parent="/manifest/application">
             <meta-data android:name="mlvb.license.url" android:value="$MLVB_LICENSE_URL"/>
             <meta-data android:name="mlvb.license.key" android:value="$MLVB_LICENSE_KEY" />
         </config-file>

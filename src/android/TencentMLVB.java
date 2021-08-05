@@ -107,7 +107,7 @@ public class TencentMLVB extends CordovaPlugin {
     super.initialize(cordova, webView);
     this.activity = cordova.getActivity();
     this.cordovaWebView = webView;
-    MLVBRoomImplV1.getInstance(cordova, webView);
+
     ApplicationInfo ai = null;
     try {
       ai = cordova.getActivity().getPackageManager().getApplicationInfo(cordova.getActivity().getPackageName(), PackageManager.GET_META_DATA);
@@ -122,6 +122,8 @@ public class TencentMLVB extends CordovaPlugin {
     if (bundle.containsKey("mlvb.license.key")) {
       MLVBCommonDef.TCGlobalConfig.LICENCE_KEY = bundle.getString("mlvb.license.key");
     }
+
+    MLVBRoomImplV1.getInstance(cordova, webView);
 
   }
 
